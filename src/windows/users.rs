@@ -1,6 +1,5 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::utils::to_str;
 use crate::{
     common::{Gid, Uid},
     windows::sid::Sid,
@@ -22,6 +21,7 @@ use winapi::um::ntlsa::{
     SECURITY_LOGON_SESSION_DATA,
 };
 use winapi::um::winnt::{LPWSTR, LUID, WCHAR};
+use windows::core::PWSTR;
 
 #[doc = include_str!("../../md_doc/user.md")]
 pub struct User {
@@ -166,7 +166,7 @@ unsafe fn get_groups_for_user(username: LPWSTR) -> Vec<Group> {
         if !buf.0.is_null() {
             let entries = std::slice::from_raw_parts(buf.0, nb_entries as _);
             groups.extend(entries.iter().map(|entry| Group {
-                name: to_str(entry.lgrui0_name),
+                name: PWSTR(entry.lgrui0_name).to_string().unwrap(),
                 id: Gid(0),
             }));
         }
@@ -213,7 +213,7 @@ pub unsafe fn get_users() -> Vec<User> {
                         // if this fails.
                         let name = sid
                             .account_name()
-                            .unwrap_or_else(|| to_str(entry.usri0_name));
+                            .unwrap_or_else(|| PWSTR(entry.usri0_name).to_string().unwrap());
                         users.push(User::new(Uid(sid), name, entry.usri0_name, true))
                     }
                 }

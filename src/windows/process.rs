@@ -663,7 +663,7 @@ unsafe fn get_process_times(handle: HANDLE) -> u64 {
         &mut x as *mut FILETIME,
         &mut x as *mut FILETIME,
     );
-    super::utils::filetime_to_u64(fstart)
+    super::utils::filetime_to_u64(std::mem::transmute(fstart))
 }
 
 #[inline]

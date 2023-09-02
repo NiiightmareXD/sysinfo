@@ -14,8 +14,7 @@ use winapi::{
         winnt::{SidTypeUnknown, LPWSTR, PSID},
     },
 };
-
-use crate::sys::utils::to_str;
+use windows::core::PWSTR;
 
 #[doc = include_str!("../../md_doc/sid.md")]
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -105,7 +104,7 @@ impl Sid {
                 return None;
             }
 
-            Some(to_str(name.as_mut_ptr()))
+            Some(PWSTR(name.as_mut_ptr()).to_string().unwrap())
         }
     }
 }
@@ -118,7 +117,7 @@ impl Display for Sid {
                 sysinfo_debug!("ConvertSidToStringSidW failed: {:?}", GetLastError());
                 return None;
             }
-            let result = to_str(string_sid);
+            let result = PWSTR(string_sid).to_string().unwrap();
             LocalFree(string_sid as *mut _);
             Some(result)
         }

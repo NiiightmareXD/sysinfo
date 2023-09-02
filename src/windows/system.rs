@@ -4,7 +4,6 @@ use crate::{
     CpuRefreshKind, Disks, LoadAvg, Networks, Pid, ProcessExt, ProcessRefreshKind, RefreshKind,
     SystemExt, User,
 };
-use winapi::um::winreg::HKEY_LOCAL_MACHINE;
 
 use crate::sys::component::{self, Component};
 use crate::sys::cpu::*;
@@ -35,6 +34,7 @@ use winapi::um::sysinfoapi::{
     MEMORYSTATUSEX,
 };
 use winapi::um::winnt::HANDLE;
+use windows::Win32::System::Registry::HKEY_LOCAL_MACHINE;
 
 declare_signals! {
     (),

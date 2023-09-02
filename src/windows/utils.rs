@@ -1,14 +1,14 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use winapi::shared::minwindef::FILETIME;
-use winapi::shared::minwindef::{DWORD, HKEY};
-use winapi::shared::winerror;
-use winapi::um::winnt::{KEY_READ, LPWSTR};
-use winapi::um::winreg::{RegCloseKey, RegOpenKeyExW, RegQueryValueExW};
-
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::time::SystemTime;
+
+use windows::core::PCWSTR;
+use windows::Win32::Foundation::{ERROR_MORE_DATA, ERROR_SUCCESS, FILETIME, WIN32_ERROR};
+use windows::Win32::System::Registry::{
+    RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, KEY_READ, REG_VALUE_TYPE,
+};
 
 #[inline]
 pub(crate) fn filetime_to_u64(f: FILETIME) -> u64 {
@@ -23,23 +23,6 @@ pub(crate) fn get_now() -> u64 {
         .unwrap_or(0)
 }
 
-pub(crate) unsafe fn to_str(p: LPWSTR) -> String {
-    let mut i = 0;
-
-    loop {
-        let c = *p.offset(i);
-        if c == 0 {
-            break;
-        }
-        i += 1;
-    }
-    let s = std::slice::from_raw_parts(p, i as _);
-    String::from_utf16(s).unwrap_or_else(|_e| {
-        sysinfo_debug!("Failed to convert to UTF-16 string: {}", _e);
-        String::new()
-    })
-}
-
 fn utf16_str<S: AsRef<OsStr> + ?Sized>(text: &S) -> Vec<u16> {
     OsStr::new(text)
         .encode_wide()
@@ -51,31 +34,37 @@ struct RegKey(HKEY);
 
 impl RegKey {
     unsafe fn open(hkey: HKEY, path: &[u16]) -> Option<Self> {
-        let mut new_hkey: HKEY = std::ptr::null_mut();
-        if RegOpenKeyExW(hkey, path.as_ptr(), 0, KEY_READ, &mut new_hkey) != 0 {
+        let mut new_hkey = HKEY::default();
+        if RegOpenKeyExW(hkey, PCWSTR(path.as_ptr()), 0, KEY_READ, &mut new_hkey).is_err() {
             return None;
         }
         Some(Self(new_hkey))
     }
 
-    unsafe fn get_value(&self, field_name: &[u16], buf: &mut [u8], buf_len: &mut DWORD) -> DWORD {
-        let mut buf_type: DWORD = 0;
+    unsafe fn get_value(&self, field_name: &[u16], buf: &mut [u8], buf_len: &mut u32) -> u32 {
+        let mut buf_type = REG_VALUE_TYPE::default();
 
-        RegQueryValueExW(
+        let res = RegQueryValueExW(
             self.0,
-            field_name.as_ptr(),
-            std::ptr::null_mut(),
-            &mut buf_type,
-            buf.as_mut_ptr() as _,
-            buf_len,
-        ) as DWORD
+            PCWSTR(field_name.as_ptr()),
+            None,
+            Some(&mut buf_type),
+            Some(buf.as_mut_ptr()),
+            Some(buf_len),
+        );
+
+        if res.is_ok() {
+            0
+        } else {
+            res.err().unwrap_unchecked().code().0 as u32
+        }
     }
 }
 
 impl Drop for RegKey {
     fn drop(&mut self) {
         unsafe {
-            RegCloseKey(self.0);
+            let _ = RegCloseKey(self.0);
         }
     }
 }
@@ -86,13 +75,13 @@ pub(crate) fn get_reg_string_value(hkey: HKEY, path: &str, field_name: &str) -> 
 
     unsafe {
         let new_key = RegKey::open(hkey, &c_path)?;
-        let mut buf_len: DWORD = 2048;
+        let mut buf_len = 2048;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
 
         loop {
-            match new_key.get_value(&c_field_name, &mut buf, &mut buf_len) {
-                winerror::ERROR_SUCCESS => break,
-                winerror::ERROR_MORE_DATA => {
+            match WIN32_ERROR(new_key.get_value(&c_field_name, &mut buf, &mut buf_len)) {
+                ERROR_SUCCESS => break,
+                ERROR_MORE_DATA => {
                     buf.reserve(buf_len as _);
                 }
                 _ => return None,
@@ -116,11 +105,11 @@ pub(crate) fn get_reg_value_u32(hkey: HKEY, path: &str, field_name: &str) -> Opt
 
     unsafe {
         let new_key = RegKey::open(hkey, &c_path)?;
-        let mut buf_len: DWORD = 4;
+        let mut buf_len: u32 = 4;
         let mut buf = [0u8; 4];
 
         match new_key.get_value(&c_field_name, &mut buf, &mut buf_len) {
-            winerror::ERROR_SUCCESS => Some(buf),
+            0 => Some(buf),
             _ => None,
         }
     }
