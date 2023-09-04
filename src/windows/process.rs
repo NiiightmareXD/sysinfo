@@ -1,61 +1,75 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::system::is_proc_running;
-use crate::windows::Sid;
 use crate::{
-    DiskUsage, Gid, Pid, PidExt, ProcessExt, ProcessRefreshKind, ProcessStatus, Signal, Uid,
+    sys::system::is_proc_running, windows::Sid, DiskUsage, Gid, Pid, PidExt, ProcessExt,
+    ProcessRefreshKind, ProcessStatus, Signal, Uid,
 };
 
-use std::ffi::OsString;
-use std::fmt;
-use std::mem::{size_of, zeroed, MaybeUninit};
-use std::ops::Deref;
-use std::os::windows::ffi::OsStringExt;
-use std::os::windows::process::CommandExt;
-use std::path::{Path, PathBuf};
-use std::process;
-use std::ptr::null_mut;
-use std::str;
-use std::sync::Arc;
+use std::{
+    ffi::OsString,
+    fmt,
+    mem::{size_of, zeroed, MaybeUninit},
+    ops::Deref,
+    os::windows::{ffi::OsStringExt, process::CommandExt},
+    path::{Path, PathBuf},
+    process,
+    ptr::null_mut,
+    str,
+    sync::Arc,
+};
 
 use libc::{c_void, memcpy};
-
-use ntapi::ntpebteb::PEB;
-use ntapi::ntwow64::{PEB32, PRTL_USER_PROCESS_PARAMETERS32, RTL_USER_PROCESS_PARAMETERS32};
 use once_cell::sync::Lazy;
+use winapi::{
+    shared::{
+        basetsd::SIZE_T,
+        minwindef::{DWORD, FALSE, FILETIME, LPVOID, MAX_PATH, TRUE, ULONG},
+        ntdef::UNICODE_STRING,
+        ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_INFO_LENGTH_MISMATCH},
+        winerror::ERROR_INSUFFICIENT_BUFFER,
+    },
+    um::{
+        errhandlingapi::GetLastError,
+        handleapi::CloseHandle,
+        heapapi::{GetProcessHeap, HeapAlloc, HeapFree},
+        memoryapi::{ReadProcessMemory, VirtualQueryEx},
+        minwinbase::{LMEM_FIXED, LMEM_ZEROINIT},
+        processthreadsapi::{
+            GetProcessTimes, GetSystemTimes, OpenProcess, OpenProcessToken, ProcessIdToSessionId,
+        },
+        psapi::{
+            GetModuleFileNameExW, GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS,
+            PROCESS_MEMORY_COUNTERS_EX,
+        },
+        securitybaseapi::GetTokenInformation,
+        winbase::{GetProcessIoCounters, LocalAlloc, LocalFree, CREATE_NO_WINDOW},
+        winnt::{
+            TokenUser, HANDLE, HEAP_ZERO_MEMORY, IO_COUNTERS, MEMORY_BASIC_INFORMATION,
+            PROCESS_QUERY_INFORMATION, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_VM_READ,
+            RTL_OSVERSIONINFOEXW, TOKEN_QUERY, TOKEN_USER, ULARGE_INTEGER,
+        },
+    },
+};
 
-use ntapi::ntexapi::{
-    NtQuerySystemInformation, SystemProcessIdInformation, SYSTEM_PROCESS_ID_INFORMATION,
+use windows::{
+    core::PWSTR,
+    Wdk::System::{
+        SystemInformation::NtQuerySystemInformation,
+        SystemServices::RtlGetVersion,
+        Threading::{
+            NtQueryInformationProcess, ProcessBasicInformation, ProcessCommandLineInformation,
+            ProcessWow64Information, PROCESSINFOCLASS,
+        },
+    },
+    Win32::System::Threading::PROCESS_BASIC_INFORMATION,
 };
-use ntapi::ntpsapi::{
-    NtQueryInformationProcess, ProcessBasicInformation, ProcessCommandLineInformation,
-    ProcessWow64Information, PROCESSINFOCLASS, PROCESS_BASIC_INFORMATION,
-};
-use ntapi::ntrtl::{RtlGetVersion, PRTL_USER_PROCESS_PARAMETERS, RTL_USER_PROCESS_PARAMETERS};
-use winapi::shared::basetsd::SIZE_T;
-use winapi::shared::minwindef::{DWORD, FALSE, FILETIME, LPVOID, MAX_PATH, TRUE, ULONG};
-use winapi::shared::ntdef::{NT_SUCCESS, UNICODE_STRING};
-use winapi::shared::ntstatus::{
-    STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_INFO_LENGTH_MISMATCH, STATUS_SUCCESS,
-};
-use winapi::shared::winerror::ERROR_INSUFFICIENT_BUFFER;
-use winapi::um::errhandlingapi::GetLastError;
-use winapi::um::handleapi::CloseHandle;
-use winapi::um::heapapi::{GetProcessHeap, HeapAlloc, HeapFree};
-use winapi::um::memoryapi::{ReadProcessMemory, VirtualQueryEx};
-use winapi::um::minwinbase::{LMEM_FIXED, LMEM_ZEROINIT};
-use winapi::um::processthreadsapi::{
-    GetProcessTimes, GetSystemTimes, OpenProcess, OpenProcessToken, ProcessIdToSessionId,
-};
-use winapi::um::psapi::{
-    GetModuleFileNameExW, GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS, PROCESS_MEMORY_COUNTERS_EX,
-};
-use winapi::um::securitybaseapi::GetTokenInformation;
-use winapi::um::winbase::{GetProcessIoCounters, LocalAlloc, LocalFree, CREATE_NO_WINDOW};
-use winapi::um::winnt::{
-    TokenUser, HANDLE, HEAP_ZERO_MEMORY, IO_COUNTERS, MEMORY_BASIC_INFORMATION,
-    PROCESS_QUERY_INFORMATION, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_VM_READ,
-    RTL_OSVERSIONINFOEXW, TOKEN_QUERY, TOKEN_USER, ULARGE_INTEGER,
+use windows_native::{
+    ntexapi::{
+        SYSTEM_INFORMATION_CLASS::SystemProcessIdInformation, SYSTEM_PROCESS_ID_INFORMATION,
+    },
+    ntpebteb::PEB,
+    ntrtl::RTL_USER_PROCESS_PARAMETERS,
+    ntwow64::{PEB32, RTL_USER_PROCESS_PARAMETERS32},
 };
 
 impl fmt::Display for ProcessStatus {
@@ -228,9 +242,7 @@ static WINDOWS_8_1_OR_NEWER: Lazy<bool> = Lazy::new(|| unsafe {
     let mut version_info: RTL_OSVERSIONINFOEXW = MaybeUninit::zeroed().assume_init();
 
     version_info.dwOSVersionInfoSize = std::mem::size_of::<RTL_OSVERSIONINFOEXW>() as u32;
-    if !NT_SUCCESS(RtlGetVersion(
-        &mut version_info as *mut RTL_OSVERSIONINFOEXW as *mut _,
-    )) {
+    if RtlGetVersion(&mut version_info as *mut RTL_OSVERSIONINFOEXW as *mut _).is_err() {
         return true;
     }
 
@@ -283,48 +295,49 @@ unsafe fn display_ntstatus_error(ntstatus: winapi::shared::ntdef::NTSTATUS) {
 // for explanations.
 unsafe fn get_process_name(pid: Pid) -> Option<String> {
     let mut info = SYSTEM_PROCESS_ID_INFORMATION {
-        ProcessId: pid.0 as _,
-        ImageName: UNICODE_STRING {
+        ProcessId: std::mem::transmute(pid.0 as isize),
+        ImageName: std::mem::transmute(UNICODE_STRING {
             Length: 0,
             // `MaximumLength` MUST BE a power of 2.
             MaximumLength: 1 << 7, // 128
             Buffer: null_mut(),
-        },
+        }),
     };
 
     for i in 0.. {
-        info.ImageName.Buffer = LocalAlloc(
+        info.ImageName.Buffer = PWSTR(LocalAlloc(
             LMEM_FIXED | LMEM_ZEROINIT,
-            info.ImageName.MaximumLength as _,
-        ) as *mut _;
+            info.ImageName.MaximumLength as usize,
+        ) as *mut _);
         if info.ImageName.Buffer.is_null() {
             sysinfo_debug!("Couldn't get process infos: LocalAlloc failed");
             return None;
         }
         let ntstatus = NtQuerySystemInformation(
-            SystemProcessIdInformation,
+            std::mem::transmute(SystemProcessIdInformation),
             &mut info as *mut _ as *mut _,
             size_of::<SYSTEM_PROCESS_ID_INFORMATION>() as _,
             null_mut(),
         );
-        if ntstatus == STATUS_SUCCESS {
+        if ntstatus.is_ok() {
             break;
-        } else if ntstatus == STATUS_INFO_LENGTH_MISMATCH {
+        } else if ntstatus.err().unwrap_unchecked().code().0 == STATUS_INFO_LENGTH_MISMATCH {
             if !info.ImageName.Buffer.is_null() {
-                LocalFree(info.ImageName.Buffer as *mut _);
+                LocalFree(info.ImageName.Buffer.0 as *mut _);
             }
             if i > 2 {
-                // Too many iterations, we should have the correct length at this point normally,
-                // aborting name retrieval.
+                // Too many iterations, we should have the correct length at this point
+                // normally, aborting name retrieval.
                 sysinfo_debug!(
                     "NtQuerySystemInformation returned `STATUS_INFO_LENGTH_MISMATCH` too many times"
                 );
                 return None;
             }
-            // New length has been set into `MaximumLength` so we just continue the loop.
+            // New length has been set into `MaximumLength` so we just continue
+            // the loop.
         } else {
             if !info.ImageName.Buffer.is_null() {
-                LocalFree(info.ImageName.Buffer as *mut _);
+                LocalFree(info.ImageName.Buffer.0 as *mut _);
             }
 
             #[cfg(feature = "debug")]
@@ -340,7 +353,7 @@ unsafe fn get_process_name(pid: Pid) -> Option<String> {
     }
 
     let s = std::slice::from_raw_parts(
-        info.ImageName.Buffer,
+        info.ImageName.Buffer.0,
         // The length is in bytes, not the length of string
         info.ImageName.Length as usize / std::mem::size_of::<u16>(),
     );
@@ -348,7 +361,7 @@ unsafe fn get_process_name(pid: Pid) -> Option<String> {
     let name = Path::new(&os_str)
         .file_name()
         .map(|s| s.to_string_lossy().to_string());
-    LocalFree(info.ImageName.Buffer as _);
+    LocalFree(info.ImageName.Buffer.0 as _);
     name
 }
 
@@ -374,12 +387,13 @@ impl Process {
             let process_handler = get_process_handler(pid)?;
             let mut info: MaybeUninit<PROCESS_BASIC_INFORMATION> = MaybeUninit::uninit();
             if NtQueryInformationProcess(
-                *process_handler,
+                windows::Win32::Foundation::HANDLE(process_handler.0 as isize),
                 ProcessBasicInformation,
                 info.as_mut_ptr() as *mut _,
                 size_of::<PROCESS_BASIC_INFORMATION>() as _,
                 null_mut(),
-            ) != 0
+            )
+            .is_err()
             {
                 return None;
             }
@@ -397,7 +411,7 @@ impl Process {
                 }
             };
             let (start_time, run_time) = get_start_and_run_time(*process_handler, now);
-            let parent = if info.InheritedFromUniqueProcessId as usize != 0 {
+            let parent = if info.InheritedFromUniqueProcessId != 0 {
                 Some(Pid(info.InheritedFromUniqueProcessId as _))
             } else {
                 None
@@ -668,8 +682,8 @@ unsafe fn get_process_times(handle: HANDLE) -> u64 {
 
 #[inline]
 fn compute_start(process_times: u64) -> u64 {
-    // 11_644_473_600 is the number of seconds between the Windows epoch (1601-01-01) and
-    // the Linux epoch (1970-01-01).
+    // 11_644_473_600 is the number of seconds between the Windows epoch
+    // (1601-01-01) and the Linux epoch (1970-01-01).
     process_times / 10_000_000 - 11_644_473_600
 }
 
@@ -697,16 +711,17 @@ unsafe fn ph_query_process_variable_size(
     let mut return_length = MaybeUninit::<ULONG>::uninit();
 
     let mut status = NtQueryInformationProcess(
-        **process_handle,
+        windows::Win32::Foundation::HANDLE(process_handle.0 as isize),
         process_information_class,
         null_mut(),
         0,
         return_length.as_mut_ptr() as *mut _,
     );
 
-    if status != STATUS_BUFFER_OVERFLOW
-        && status != STATUS_BUFFER_TOO_SMALL
-        && status != STATUS_INFO_LENGTH_MISMATCH
+    if status.as_ref().is_ok()
+        && status.as_ref().err().unwrap_unchecked().code().0 != STATUS_BUFFER_OVERFLOW
+        && status.as_ref().err().unwrap_unchecked().code().0 != STATUS_BUFFER_TOO_SMALL
+        && status.as_ref().err().unwrap_unchecked().code().0 != STATUS_INFO_LENGTH_MISMATCH
     {
         return None;
     }
@@ -715,13 +730,13 @@ unsafe fn ph_query_process_variable_size(
     let buf_len = (return_length as usize) / 2;
     let mut buffer: Vec<u16> = Vec::with_capacity(buf_len + 1);
     status = NtQueryInformationProcess(
-        **process_handle,
+        windows::Win32::Foundation::HANDLE(process_handle.0 as isize),
         process_information_class,
         buffer.as_mut_ptr() as *mut _,
         return_length,
         &mut return_length as *mut _,
     );
-    if !NT_SUCCESS(status) {
+    if status.is_err() {
         return None;
     }
     buffer.set_len(buf_len);
@@ -826,8 +841,32 @@ macro_rules! impl_RtlUserProcessParameters {
     };
 }
 
+macro_rules! impl_RtlUserProcessParameters2 {
+    ($t:ty) => {
+        impl RtlUserProcessParameters for $t {
+            fn get_cmdline(&self, handle: &HandleWrapper) -> Result<Vec<u16>, &'static str> {
+                let ptr = self.CommandLine.Buffer;
+                let size = self.CommandLine.Length;
+                unsafe { get_process_data(handle, ptr.0 as _, size as _) }
+            }
+            fn get_cwd(&self, handle: &HandleWrapper) -> Result<Vec<u16>, &'static str> {
+                let ptr = self.CurrentDirectory.DosPath.Buffer;
+                let size = self.CurrentDirectory.DosPath.Length;
+                unsafe { get_process_data(handle, ptr.0 as _, size as _) }
+            }
+            fn get_environ(&self, handle: &HandleWrapper) -> Result<Vec<u16>, &'static str> {
+                let ptr = self.Environment;
+                unsafe {
+                    let size = get_region_size(handle, ptr as LPVOID)?;
+                    get_process_data(handle, ptr as _, size as _)
+                }
+            }
+        }
+    };
+}
+
 impl_RtlUserProcessParameters!(RTL_USER_PROCESS_PARAMETERS32);
-impl_RtlUserProcessParameters!(RTL_USER_PROCESS_PARAMETERS);
+impl_RtlUserProcessParameters2!(RTL_USER_PROCESS_PARAMETERS);
 
 unsafe fn get_process_params(
     handle: &HandleWrapper,
@@ -839,13 +878,13 @@ unsafe fn get_process_params(
     // First check if target process is running in wow64 compatibility emulator
     let mut pwow32info = MaybeUninit::<LPVOID>::uninit();
     let result = NtQueryInformationProcess(
-        **handle,
+        windows::Win32::Foundation::HANDLE(handle.0 as isize),
         ProcessWow64Information,
         pwow32info.as_mut_ptr() as *mut _,
         size_of::<LPVOID>() as u32,
         null_mut(),
     );
-    if !NT_SUCCESS(result) {
+    if result.is_err() {
         return Err("Unable to check WOW64 information about the process");
     }
     let pwow32info = pwow32info.assume_init();
@@ -855,13 +894,13 @@ unsafe fn get_process_params(
 
         let mut pbasicinfo = MaybeUninit::<PROCESS_BASIC_INFORMATION>::uninit();
         let result = NtQueryInformationProcess(
-            **handle,
+            windows::Win32::Foundation::HANDLE(handle.0 as isize),
             ProcessBasicInformation,
             pbasicinfo.as_mut_ptr() as *mut _,
             size_of::<PROCESS_BASIC_INFORMATION>() as u32,
             null_mut(),
         );
-        if !NT_SUCCESS(result) {
+        if result.is_err() {
             return Err("Unable to get basic process information");
         }
         let pinfo = pbasicinfo.assume_init();
@@ -883,7 +922,7 @@ unsafe fn get_process_params(
         let mut proc_params = MaybeUninit::<RTL_USER_PROCESS_PARAMETERS>::uninit();
         if ReadProcessMemory(
             **handle,
-            peb.ProcessParameters as *mut PRTL_USER_PROCESS_PARAMETERS as *mut _,
+            peb.ProcessParameters as *mut *mut RTL_USER_PROCESS_PARAMETERS as *mut _,
             proc_params.as_mut_ptr() as *mut _,
             size_of::<RTL_USER_PROCESS_PARAMETERS>() as SIZE_T,
             null_mut(),
@@ -917,7 +956,7 @@ unsafe fn get_process_params(
     let mut proc_params = MaybeUninit::<RTL_USER_PROCESS_PARAMETERS32>::uninit();
     if ReadProcessMemory(
         **handle,
-        peb32.ProcessParameters as *mut PRTL_USER_PROCESS_PARAMETERS32 as *mut _,
+        peb32.ProcessParameters as *mut *mut RTL_USER_PROCESS_PARAMETERS32 as *mut _,
         proc_params.as_mut_ptr() as *mut _,
         size_of::<RTL_USER_PROCESS_PARAMETERS32>() as SIZE_T,
         null_mut(),
@@ -1017,26 +1056,22 @@ fn get_proc_env<T: RtlUserProcessParameters>(params: &T, handle: &HandleWrapper)
 }
 
 pub(crate) fn get_executable_path(_pid: Pid) -> PathBuf {
-    /*let where_req = format!("ProcessId={}", pid);
-
-    if let Some(ret) = run_wmi(&["process", "where", &where_req, "get", "ExecutablePath"]) {
-        for line in ret.lines() {
-            if line.is_empty() || line == "ExecutablePath" {
-                continue
-            }
-            return line.to_owned();
-        }
-    }*/
+    // let where_req = format!("ProcessId={}", pid);
+    //
+    // if let Some(ret) = run_wmi(&["process", "where", &where_req, "get",
+    // "ExecutablePath"]) { for line in ret.lines() {
+    // if line.is_empty() || line == "ExecutablePath" {
+    // continue
+    // }
+    // return line.to_owned();
+    // }
+    // }
     PathBuf::new()
 }
 
 #[inline]
 fn check_sub(a: u64, b: u64) -> u64 {
-    if a < b {
-        a
-    } else {
-        a - b
-    }
+    if a < b { a } else { a - b }
 }
 
 /// Before changing this function, you must consider the following:

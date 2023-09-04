@@ -1,16 +1,17 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::common::MacAddr;
-use crate::network::refresh_networks_addresses;
-use crate::{NetworkExt, Networks, NetworksExt, NetworksIter};
+use crate::{
+    common::MacAddr, network::refresh_networks_addresses, NetworkExt, Networks, NetworksExt,
+    NetworksIter,
+};
 
 use std::collections::{hash_map, HashMap};
 
-use winapi::shared::ifdef::{MediaConnectStateDisconnected, NET_LUID};
-use winapi::shared::netioapi::{
-    FreeMibTable, GetIfEntry2, GetIfTable2, MIB_IF_ROW2, PMIB_IF_TABLE2,
+use winapi::shared::{
+    ifdef::{MediaConnectStateDisconnected, NET_LUID},
+    netioapi::{FreeMibTable, GetIfEntry2, GetIfTable2, MIB_IF_ROW2, PMIB_IF_TABLE2},
+    winerror::NO_ERROR,
 };
-use winapi::shared::winerror::NO_ERROR;
 
 macro_rules! old_and_new {
     ($ty_:expr, $name:ident, $old:ident, $new_val:expr) => {{
@@ -37,10 +38,12 @@ impl NetworksExt for Networks {
                 data.updated = false;
             }
 
-            // In here, this is tricky: we have to filter out the software interfaces to only keep
-            // the hardware ones. To do so, we first check the connection potential speed (if 0, not
-            // interesting), then we check its state: if not open, not interesting either. And finally,
-            // we count the members of a same group: if there is more than 1, then it's software level.
+            // In here, this is tricky: we have to filter out the software interfaces to
+            // only keep the hardware ones. To do so, we first check the
+            // connection potential speed (if 0, not interesting), then we check
+            // its state: if not open, not interesting either. And finally,
+            // we count the members of a same group: if there is more than 1, then it's
+            // software level.
             let mut groups = HashMap::new();
             let mut indexes = Vec::new();
             let ptr = (*table).Table.as_ptr();

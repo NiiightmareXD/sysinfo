@@ -33,9 +33,10 @@ mod tests {
                 "process not listed",
             );
             // Ensure that the process was really added to the list!
-            assert!(sys
-                .process(crate::get_current_pid().expect("failed to get current pid"))
-                .is_some());
+            assert!(
+                sys.process(crate::get_current_pid().expect("failed to get current pid"))
+                    .is_some()
+            );
         }
     }
 
@@ -86,9 +87,9 @@ mod tests {
         };
         if let Some(p) = sys.process(current_pid) {
             p.foo(); // If this doesn't compile, it'll simply mean that the Process type
-                     // doesn't implement the Send trait.
+            // doesn't implement the Send trait.
             p.bar(); // If this doesn't compile, it'll simply mean that the Process type
-                     // doesn't implement the Sync trait.
+        // doesn't implement the Sync trait.
         } else {
             #[cfg(not(feature = "apple-sandbox"))]
             assert!(!System::IS_SUPPORTED);
@@ -115,15 +116,20 @@ mod tests {
         }
     }
 
-    // This test is used to ensure that the CPU usage computation isn't completely going off
-    // when refreshing it too frequently (ie, multiple times in a row in a very small interval).
+    // This test is used to ensure that the CPU usage computation isn't completely
+    // going off when refreshing it too frequently (ie, multiple times in a row
+    // in a very small interval).
     #[test]
     #[ignore] // This test MUST be run on its own to prevent wrong CPU usage measurements.
     fn test_consecutive_cpu_usage_update() {
         use crate::{PidExt, ProcessExt, ProcessRefreshKind, System, SystemExt};
-        use std::sync::atomic::{AtomicBool, Ordering};
-        use std::sync::Arc;
-        use std::time::Duration;
+        use std::{
+            sync::{
+                atomic::{AtomicBool, Ordering},
+                Arc,
+            },
+            time::Duration,
+        };
 
         if !System::IS_SUPPORTED {
             return;
@@ -134,7 +140,8 @@ mod tests {
         sys.refresh_processes_specifics(ProcessRefreshKind::new().with_cpu());
 
         let stop = Arc::new(AtomicBool::new(false));
-        // Spawning a few threads to ensure that it will actually have an impact on the CPU usage.
+        // Spawning a few threads to ensure that it will actually have an impact on the
+        // CPU usage.
         for it in 0..sys.cpus().len() / 2 + 1 {
             let stop_c = Arc::clone(&stop);
             std::thread::spawn(move || {

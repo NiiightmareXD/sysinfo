@@ -2,12 +2,12 @@
 
 use libc::{self, c_char, if_msghdr2, CTL_NET, NET_RT_IFLIST2, PF_ROUTE, RTM_IFINFO2};
 
-use std::collections::hash_map;
-use std::ptr::null_mut;
+use std::{collections::hash_map, ptr::null_mut};
 
-use crate::common::MacAddr;
-use crate::network::refresh_networks_addresses;
-use crate::{NetworkExt, Networks, NetworksExt, NetworksIter};
+use crate::{
+    common::MacAddr, network::refresh_networks_addresses, NetworkExt, Networks, NetworksExt,
+    NetworksIter,
+};
 
 macro_rules! old_and_new {
     ($ty_:expr, $name:ident, $old:ident, $new_val:expr) => {{

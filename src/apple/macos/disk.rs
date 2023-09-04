@@ -1,15 +1,19 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::ffi;
-use crate::sys::{
-    disk::{get_str_value, DictKey},
-    macos::utils::IOReleaser,
-    utils::CFReleaser,
+use crate::{
+    sys::{
+        disk::{get_str_value, DictKey},
+        ffi,
+        macos::utils::IOReleaser,
+        utils::CFReleaser,
+    },
+    DiskKind,
 };
-use crate::DiskKind;
 
-use core_foundation_sys::base::{kCFAllocatorDefault, kCFAllocatorNull};
-use core_foundation_sys::string as cfs;
+use core_foundation_sys::{
+    base::{kCFAllocatorDefault, kCFAllocatorNull},
+    string as cfs,
+};
 
 use std::ffi::CStr;
 
@@ -36,8 +40,9 @@ pub(crate) fn get_disk_type(disk: &libc::statfs) -> Option<DiskKind> {
             })?
     };
 
-    // We don't need to wrap this in an auto-releaser because the following call to `IOServiceGetMatchingServices`
-    // will take ownership of one retain reference.
+    // We don't need to wrap this in an auto-releaser because the following call to
+    // `IOServiceGetMatchingServices` will take ownership of one retain
+    // reference.
     let matching =
         unsafe { ffi::IOBSDNameMatching(ffi::kIOMasterPortDefault, 0, bsd_name.as_ptr().cast()) };
 
@@ -58,7 +63,8 @@ pub(crate) fn get_disk_type(disk: &libc::statfs) -> Option<DiskKind> {
         return None;
     }
 
-    // Safety: We checked for success, so there is always a valid iterator, even if its empty.
+    // Safety: We checked for success, so there is always a valid iterator, even if
+    // its empty.
     let service_iterator = unsafe { IOReleaser::new_unchecked(service_iterator) };
 
     let mut parent_entry: ffi::io_registry_entry_t = 0;
@@ -66,10 +72,12 @@ pub(crate) fn get_disk_type(disk: &libc::statfs) -> Option<DiskKind> {
     while let Some(mut current_service_entry) =
         IOReleaser::new(unsafe { ffi::IOIteratorNext(service_iterator.inner()) })
     {
-        // Note: This loop is required in a non-obvious way. Due to device properties existing as a tree
-        // in IOKit, we may need an arbitrary number of calls to `IORegistryEntryCreateCFProperty` in order to find
-        // the values we are looking for. The function may return nothing if we aren't deep enough into the registry
-        // tree, so we need to continue going from child->parent node until its found.
+        // Note: This loop is required in a non-obvious way. Due to device properties
+        // existing as a tree in IOKit, we may need an arbitrary number of calls
+        // to `IORegistryEntryCreateCFProperty` in order to find the values we
+        // are looking for. The function may return nothing if we aren't deep enough
+        // into the registry tree, so we need to continue going from
+        // child->parent node until its found.
         loop {
             if unsafe {
                 ffi::IORegistryEntryGetParentEntry(
@@ -114,8 +122,9 @@ pub(crate) fn get_disk_type(disk: &libc::statfs) -> Option<DiskKind> {
                 } else {
                     // Many external drive vendors do not advertise their device's storage medium.
                     //
-                    // In these cases, assuming that there were _any_ properties about them registered, we fallback
-                    // to `HDD` when no storage medium is provided by the device instead of `Unknown`.
+                    // In these cases, assuming that there were _any_ properties about them
+                    // registered, we fallback to `HDD` when no storage medium
+                    // is provided by the device instead of `Unknown`.
                     return Some(DiskKind::HDD);
                 }
             }

@@ -103,16 +103,18 @@ mod system;
 mod traits;
 mod utils;
 
-/// This function is only used on Linux targets, on the other platforms it does nothing and returns
-/// `false`.
+/// This function is only used on Linux targets, on the other platforms it does
+/// nothing and returns `false`.
 ///
-/// On Linux, to improve performance, we keep a `/proc` file open for each process we index with
-/// a maximum number of files open equivalent to half of the system limit.
+/// On Linux, to improve performance, we keep a `/proc` file open for each
+/// process we index with a maximum number of files open equivalent to half of
+/// the system limit.
 ///
-/// The problem is that some users might need all the available file descriptors so we need to
-/// allow them to change this limit.
+/// The problem is that some users might need all the available file descriptors
+/// so we need to allow them to change this limit.
 ///
-/// Note that if you set a limit bigger than the system limit, the system limit will be set.
+/// Note that if you set a limit bigger than the system limit, the system limit
+/// will be set.
 ///
 /// Returns `true` if the new value has been set.
 ///
@@ -221,7 +223,8 @@ mod test {
             #[cfg(not(feature = "apple-sandbox"))]
             assert!(!s.processes().iter().all(|(_, proc_)| proc_.memory() == 0));
         } else {
-            // There should be no process, but if there is one, its memory usage should be 0.
+            // There should be no process, but if there is one, its memory usage should be
+            // 0.
             assert!(s.processes().iter().all(|(_, proc_)| proc_.memory() == 0));
         }
     }
@@ -264,23 +267,26 @@ mod test {
 
         s.refresh_processes();
         // All CPU usage will start at zero until the second refresh
-        assert!(s
-            .processes()
-            .iter()
-            .all(|(_, proc_)| proc_.cpu_usage() == 0.0));
+        assert!(
+            s.processes()
+                .iter()
+                .all(|(_, proc_)| proc_.cpu_usage() == 0.0)
+        );
 
         // Wait a bit to update CPU usage values
         std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
         s.refresh_processes();
-        assert!(s
-            .processes()
-            .iter()
-            .all(|(_, proc_)| proc_.cpu_usage() >= 0.0
-                && proc_.cpu_usage() <= (s.cpus().len() as f32) * 100.0));
-        assert!(s
-            .processes()
-            .iter()
-            .any(|(_, proc_)| proc_.cpu_usage() > 0.0));
+        assert!(
+            s.processes()
+                .iter()
+                .all(|(_, proc_)| proc_.cpu_usage() >= 0.0
+                    && proc_.cpu_usage() <= (s.cpus().len() as f32) * 100.0)
+        );
+        assert!(
+            s.processes()
+                .iter()
+                .any(|(_, proc_)| proc_.cpu_usage() > 0.0)
+        );
     }
 
     #[test]
@@ -343,18 +349,20 @@ mod test {
 
             // And now check that our `get_user_by_id` method works.
             s.refresh_processes();
-            assert!(s
-                .processes()
-                .iter()
-                .filter_map(|(_, p)| p.user_id())
-                .any(|uid| s.get_user_by_id(uid).is_some()));
+            assert!(
+                s.processes()
+                    .iter()
+                    .filter_map(|(_, p)| p.user_id())
+                    .any(|uid| s.get_user_by_id(uid).is_some())
+            );
         }
     }
 
     #[test]
     fn check_all_process_uids_resolvable() {
         // On linux, some user IDs don't have an associated user (no idea why though).
-        // If `getent` doesn't find them, we can assume it's a dark secret from the linux land.
+        // If `getent` doesn't find them, we can assume it's a dark secret from the
+        // linux land.
         if System::IS_SUPPORTED && cfg!(not(target_os = "linux")) {
             let s = System::new_with_specifics(
                 RefreshKind::new()
@@ -380,17 +388,19 @@ mod test {
         if System::IS_SUPPORTED {
             assert!(!s.name().expect("Failed to get system name").is_empty());
 
-            assert!(!s
-                .kernel_version()
-                .expect("Failed to get kernel version")
-                .is_empty());
+            assert!(
+                !s.kernel_version()
+                    .expect("Failed to get kernel version")
+                    .is_empty()
+            );
 
             assert!(!s.os_version().expect("Failed to get os version").is_empty());
 
-            assert!(!s
-                .long_os_version()
-                .expect("Failed to get long OS version")
-                .is_empty());
+            assert!(
+                !s.long_os_version()
+                    .expect("Failed to get long OS version")
+                    .is_empty()
+            );
         }
 
         assert!(!s.distribution_id().is_empty());
@@ -414,9 +424,11 @@ mod test {
             #[cfg(not(feature = "apple-sandbox"))]
             {
                 let mut s = System::new();
-                // First check what happens in case the process isn't already in our process list.
+                // First check what happens in case the process isn't already in our process
+                // list.
                 assert!(s.refresh_process(_pid));
-                // Then check that it still returns true if the process is already in our process list.
+                // Then check that it still returns true if the process is already in our
+                // process list.
                 assert!(s.refresh_process(_pid));
             }
         }
@@ -438,8 +450,8 @@ mod test {
         // This information isn't retrieved by default.
         assert!(s.cpus().is_empty());
         if System::IS_SUPPORTED {
-            // The physical cores count is recomputed every time the function is called, so the
-            // information must be relevant even with nothing initialized.
+            // The physical cores count is recomputed every time the function is called, so
+            // the information must be relevant even with nothing initialized.
             let physical_cores_count = s
                 .physical_core_count()
                 .expect("failed to get number of physical cores");
@@ -448,8 +460,9 @@ mod test {
             // The cpus shouldn't be empty anymore.
             assert!(!s.cpus().is_empty());
 
-            // In case we are running inside a VM, it's possible to not have a physical core, only
-            // logical ones, which is why we don't test `physical_cores_count > 0`.
+            // In case we are running inside a VM, it's possible to not have a physical
+            // core, only logical ones, which is why we don't test
+            // `physical_cores_count > 0`.
             let physical_cores_count2 = s
                 .physical_core_count()
                 .expect("failed to get number of physical cores");
@@ -500,8 +513,8 @@ mod test {
         }
     }
 
-    // In case `Process::updated` is misused, `System::refresh_processes` might remove them
-    // so this test ensures that it doesn't happen.
+    // In case `Process::updated` is misused, `System::refresh_processes` might
+    // remove them so this test ensures that it doesn't happen.
     #[test]
     fn check_refresh_process_update() {
         if !System::IS_SUPPORTED {
@@ -528,9 +541,10 @@ mod test {
         let mut sys = System::new();
         sys.refresh_processes_specifics(ProcessRefreshKind::new());
 
-        assert!(sys
-            .processes()
-            .iter()
-            .any(|(_, process)| !process.cmd().is_empty()));
+        assert!(
+            sys.processes()
+                .iter()
+                .any(|(_, process)| !process.cmd().is_empty())
+        );
     }
 }

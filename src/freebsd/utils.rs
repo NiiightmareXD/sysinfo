@@ -2,13 +2,10 @@
 
 use crate::{Pid, Process};
 use libc::{c_char, c_int, timeval};
-use std::cell::UnsafeCell;
-use std::collections::HashMap;
-use std::ffi::CStr;
-use std::mem;
-use std::time::SystemTime;
+use std::{cell::UnsafeCell, collections::HashMap, ffi::CStr, mem, time::SystemTime};
 
-/// This struct is used to switch between the "old" and "new" every time you use "get_mut".
+/// This struct is used to switch between the "old" and "new" every time you use
+/// "get_mut".
 #[derive(Debug)]
 pub(crate) struct VecSwitcher<T> {
     v1: Vec<T>,
@@ -39,19 +36,11 @@ impl<T: Clone> VecSwitcher<T> {
     }
 
     pub fn get_old(&self) -> &[T] {
-        if self.first {
-            &self.v1
-        } else {
-            &self.v2
-        }
+        if self.first { &self.v1 } else { &self.v2 }
     }
 
     pub fn get_new(&self) -> &[T] {
-        if self.first {
-            &self.v2
-        } else {
-            &self.v1
-        }
+        if self.first { &self.v2 } else { &self.v1 }
     }
 }
 
@@ -263,7 +252,8 @@ pub(crate) fn get_now() -> u64 {
         .unwrap_or(0)
 }
 
-// All this is needed because `kinfo_proc` doesn't implement `Send` (because it contains pointers).
+// All this is needed because `kinfo_proc` doesn't implement `Send` (because it
+// contains pointers).
 pub(crate) struct WrapMap<'a>(pub UnsafeCell<&'a mut HashMap<Pid, Process>>);
 
 unsafe impl<'a> Send for WrapMap<'a> {}

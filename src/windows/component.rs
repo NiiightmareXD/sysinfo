@@ -4,21 +4,29 @@ use crate::ComponentExt;
 
 use std::ptr::null_mut;
 
-use winapi::shared::rpcdce::{
-    RPC_C_AUTHN_LEVEL_CALL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE,
-    RPC_C_IMP_LEVEL_IMPERSONATE,
-};
-use winapi::shared::winerror::{FAILED, SUCCEEDED, S_FALSE, S_OK};
-use winapi::shared::wtypesbase::CLSCTX_INPROC_SERVER;
-use winapi::um::combaseapi::{
-    CoCreateInstance, CoInitializeEx, CoInitializeSecurity, CoSetProxyBlanket, CoUninitialize,
-};
-use winapi::um::oaidl::VARIANT;
-use winapi::um::objidl::EOAC_NONE;
-use winapi::um::oleauto::{SysAllocString, SysFreeString, VariantClear};
-use winapi::um::wbemcli::{
-    CLSID_WbemLocator, IEnumWbemClassObject, IID_IWbemLocator, IWbemClassObject, IWbemLocator,
-    IWbemServices, WBEM_FLAG_FORWARD_ONLY, WBEM_FLAG_NONSYSTEM_ONLY, WBEM_FLAG_RETURN_IMMEDIATELY,
+use winapi::{
+    shared::{
+        rpcdce::{
+            RPC_C_AUTHN_LEVEL_CALL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE,
+            RPC_C_IMP_LEVEL_IMPERSONATE,
+        },
+        winerror::{FAILED, SUCCEEDED, S_FALSE, S_OK},
+        wtypesbase::CLSCTX_INPROC_SERVER,
+    },
+    um::{
+        combaseapi::{
+            CoCreateInstance, CoInitializeEx, CoInitializeSecurity, CoSetProxyBlanket,
+            CoUninitialize,
+        },
+        oaidl::VARIANT,
+        objidl::EOAC_NONE,
+        oleauto::{SysAllocString, SysFreeString, VariantClear},
+        wbemcli::{
+            CLSID_WbemLocator, IEnumWbemClassObject, IID_IWbemLocator, IWbemClassObject,
+            IWbemLocator, IWbemServices, WBEM_FLAG_FORWARD_ONLY, WBEM_FLAG_NONSYSTEM_ONLY,
+            WBEM_FLAG_RETURN_IMMEDIATELY,
+        },
+    },
 };
 
 #[doc = include_str!("../../md_doc/component.md")]
@@ -264,7 +272,7 @@ impl Connection {
             unsafe {
                 // "WQL"
                 let s = bstr!('W', 'Q', 'L'); // query kind
-                                              // "SELECT * FROM MSAcpi_ThermalZoneTemperature"
+                // "SELECT * FROM MSAcpi_ThermalZoneTemperature"
                 let query = bstr!(
                     'S', 'E', 'L', 'E', 'C', 'T', ' ', '*', ' ', 'F', 'R', 'O', 'M', ' ', 'M', 'S',
                     'A', 'c', 'p', 'i', '_', 'T', 'h', 'e', 'r', 'm', 'a', 'l', 'Z', 'o', 'n', 'e',
@@ -361,7 +369,8 @@ impl Connection {
 
 impl Drop for Connection {
     fn drop(&mut self) {
-        // Those three calls are here to enforce that they get dropped in the good order.
+        // Those three calls are here to enforce that they get dropped in the good
+        // order.
         self.enumerator.take();
         self.server_connection.take();
         self.instance.take();

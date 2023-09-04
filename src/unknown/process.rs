@@ -2,8 +2,7 @@
 
 use crate::{DiskUsage, Gid, Pid, ProcessExt, ProcessStatus, Signal, Uid};
 
-use std::fmt;
-use std::path::Path;
+use std::{fmt, path::Path};
 
 impl fmt::Display for ProcessStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

@@ -1,0 +1,8 @@
+wrap_comments = true
+version = "Two"
+use_try_shorthand = true
+use_field_init_shorthand = true
+unstable_features = true
+normalize_doc_attributes = true
+normalize_comments = true
+imports_granularity = "Crate"

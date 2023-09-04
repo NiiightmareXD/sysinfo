@@ -4,11 +4,12 @@
 #![allow(unused_must_use, non_upper_case_globals)]
 #![allow(clippy::manual_range_contains)]
 
-use std::io::{self, BufRead, Write};
-use std::str::FromStr;
-use sysinfo::Signal::*;
+use std::{
+    io::{self, BufRead, Write},
+    str::FromStr,
+};
 use sysinfo::{
-    CpuExt, NetworkExt, NetworksExt, Pid, ProcessExt, Signal, System, SystemExt, UserExt,
+    CpuExt, NetworkExt, NetworksExt, Pid, ProcessExt, Signal, Signal::*, System, SystemExt, UserExt,
 };
 
 const signals: &[Signal] = &[
@@ -168,8 +169,8 @@ fn interpret_input(input: &str, sys: &mut System) -> bool {
             }
         }
         "cpus" => {
-            // Note: you should refresh a few times before using this, so that usage statistics
-            // can be ascertained
+            // Note: you should refresh a few times before using this, so that usage
+            // statistics can be ascertained
             writeln!(
                 &mut io::stdout(),
                 "number of physical cores: {}",

@@ -11,10 +11,11 @@ fn test_process() {
         return;
     }
     assert!(!s.processes().is_empty());
-    assert!(s
-        .processes()
-        .values()
-        .any(|p| !p.exe().to_str().unwrap_or("").is_empty()));
+    assert!(
+        s.processes()
+            .values()
+            .any(|p| !p.exe().to_str().unwrap_or("").is_empty())
+    );
 }
 
 #[test]
@@ -141,8 +142,8 @@ fn test_environ() {
     }
 }
 
-// Test to ensure that a process with a lot of environment variables doesn't get truncated.
-// More information in <https://github.com/GuillaumeGomez/sysinfo/issues/886>.
+// Test to ensure that a process with a lot of environment variables doesn't get
+// truncated. More information in <https://github.com/GuillaumeGomez/sysinfo/issues/886>.
 #[test]
 fn test_big_environ() {
     if !sysinfo::System::IS_SUPPORTED || cfg!(feature = "apple-sandbox") {
@@ -201,24 +202,23 @@ fn test_process_refresh() {
         return;
     }
     s.refresh_process(sysinfo::get_current_pid().expect("failed to get current pid"));
-    assert!(s
-        .process(sysinfo::get_current_pid().expect("failed to get current pid"))
-        .is_some(),);
+    assert!(
+        s.process(sysinfo::get_current_pid().expect("failed to get current pid"))
+            .is_some(),
+    );
 }
 
 #[test]
 fn test_process_disk_usage() {
-    use std::fs;
-    use std::fs::File;
-    use std::io::prelude::*;
+    use std::{fs, fs::File, io::prelude::*};
     use sysinfo::{get_current_pid, ProcessExt, SystemExt};
 
     if !sysinfo::System::IS_SUPPORTED || cfg!(feature = "apple-sandbox") {
         return;
     }
     if std::env::var("FREEBSD_CI").is_ok() {
-        // For an unknown reason, when running this test on Cirrus CI, it fails. It works perfectly
-        // locally though... Dark magic...
+        // For an unknown reason, when running this test on Cirrus CI, it fails. It
+        // works perfectly locally though... Dark magic...
         return;
     }
 
@@ -245,9 +245,9 @@ fn test_process_disk_usage() {
 
     if cfg!(any(target_os = "macos", target_os = "ios")) && p.disk_usage().total_written_bytes == 0
     {
-        // For whatever reason, sometimes, mac doesn't work on the first time when running
-        // `cargo test`. Two solutions, either run with "cargo test -- --test-threads 1", or
-        // check twice...
+        // For whatever reason, sometimes, mac doesn't work on the first time when
+        // running `cargo test`. Two solutions, either run with "cargo test --
+        // --test-threads 1", or check twice...
         system = inner();
         p = system
             .process(get_current_pid().expect("Failed retrieving current pid."))
@@ -329,8 +329,9 @@ fn test_process_times() {
         assert!(p.run_time() >= 1);
         assert!(p.run_time() <= 2);
         assert!(p.start_time() > p.run_time());
-        // On linux, for whatever reason, the uptime seems to be older than the boot time, leading
-        // to this weird `+ 3` to ensure the test is passing as it should...
+        // On linux, for whatever reason, the uptime seems to be older than the boot
+        // time, leading to this weird `+ 3` to ensure the test is passing as it
+        // should...
         assert!(
             p.start_time() + 3
                 > SystemTime::now()
@@ -389,7 +390,8 @@ fn test_refresh_processes() {
     assert!(!s.process(pid).unwrap().name().is_empty());
 
     p.kill().expect("Unable to kill process.");
-    // We need this, otherwise the process will still be around as a zombie on linux.
+    // We need this, otherwise the process will still be around as a zombie on
+    // linux.
     let _ = p.wait();
     // Let's give some time to the system to clean up...
     std::thread::sleep(std::time::Duration::from_secs(1));
@@ -423,24 +425,26 @@ fn test_refresh_tasks() {
     let mut s = sysinfo::System::new();
     s.refresh_processes();
 
-    assert!(s
-        .process(pid)
-        .unwrap()
-        .tasks
-        .values()
-        .any(|t| t.name() == task_name));
+    assert!(
+        s.process(pid)
+            .unwrap()
+            .tasks
+            .values()
+            .any(|t| t.name() == task_name)
+    );
 
     // Let's give some time to the system to clean up...
     std::thread::sleep(std::time::Duration::from_secs(2));
 
     s.refresh_processes();
 
-    assert!(!s
-        .process(pid)
-        .unwrap()
-        .tasks
-        .values()
-        .any(|t| t.name() == task_name));
+    assert!(
+        !s.process(pid)
+            .unwrap()
+            .tasks
+            .values()
+            .any(|t| t.name() == task_name)
+    );
 }
 
 // Checks that `refresh_process` is NOT removing dead processes.
@@ -477,7 +481,8 @@ fn test_refresh_process() {
     assert!(!s.process(pid).unwrap().name().is_empty());
 
     p.kill().expect("Unable to kill process.");
-    // We need this, otherwise the process will still be around as a zombie on linux.
+    // We need this, otherwise the process will still be around as a zombie on
+    // linux.
     let _ = p.wait();
     // Let's give some time to the system to clean up...
     std::thread::sleep(std::time::Duration::from_secs(1));
@@ -590,7 +595,8 @@ fn test_process_iterator_lifetimes() {
 
     let process: Option<&sysinfo::Process>;
     {
-        // worked fine before and after: &'static str lives longer than System, error couldn't appear
+        // worked fine before and after: &'static str lives longer than System, error
+        // couldn't appear
         process = s.processes_by_name("").next();
     }
     process.unwrap();
@@ -627,7 +633,8 @@ fn test_process_creds() {
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    // Just ensure there is at least one process on the system whose credentials can be retrieved.
+    // Just ensure there is at least one process on the system whose credentials can
+    // be retrieved.
     assert!(sys.processes().values().any(|process| {
         if process.user_id().is_none() {
             return false;

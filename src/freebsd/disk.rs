@@ -2,8 +2,10 @@
 
 use crate::{DiskExt, DiskKind, Disks, DisksExt};
 
-use std::ffi::{OsStr, OsString};
-use std::path::{Path, PathBuf};
+use std::{
+    ffi::{OsStr, OsString},
+    path::{Path, PathBuf},
+};
 
 use super::utils::c_buf_to_str;
 

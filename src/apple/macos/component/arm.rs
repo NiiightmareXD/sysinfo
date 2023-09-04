@@ -2,21 +2,23 @@
 
 use std::ffi::CStr;
 
-use core_foundation_sys::array::{CFArrayGetCount, CFArrayGetValueAtIndex};
-use core_foundation_sys::base::{kCFAllocatorDefault, CFRetain};
-use core_foundation_sys::string::{
-    kCFStringEncodingUTF8, CFStringCreateWithBytes, CFStringGetCStringPtr,
+use core_foundation_sys::{
+    array::{CFArrayGetCount, CFArrayGetValueAtIndex},
+    base::{kCFAllocatorDefault, CFRetain},
+    string::{kCFStringEncodingUTF8, CFStringCreateWithBytes, CFStringGetCStringPtr},
 };
 
-use crate::apple::inner::ffi::{
-    kHIDPage_AppleVendor, kHIDUsage_AppleVendor_TemperatureSensor, kIOHIDEventTypeTemperature,
-    matching, IOHIDEventFieldBase, IOHIDEventGetFloatValue, IOHIDEventSystemClientCopyServices,
-    IOHIDEventSystemClientCreate, IOHIDEventSystemClientSetMatching, IOHIDServiceClientCopyEvent,
-    IOHIDServiceClientCopyProperty, __IOHIDEventSystemClient, __IOHIDServiceClient,
-    HID_DEVICE_PROPERTY_PRODUCT,
+use crate::{
+    apple::inner::ffi::{
+        kHIDPage_AppleVendor, kHIDUsage_AppleVendor_TemperatureSensor, kIOHIDEventTypeTemperature,
+        matching, IOHIDEventFieldBase, IOHIDEventGetFloatValue, IOHIDEventSystemClientCopyServices,
+        IOHIDEventSystemClientCreate, IOHIDEventSystemClientSetMatching,
+        IOHIDServiceClientCopyEvent, IOHIDServiceClientCopyProperty, __IOHIDEventSystemClient,
+        __IOHIDServiceClient, HID_DEVICE_PROPERTY_PRODUCT,
+    },
+    sys::utils::CFReleaser,
+    ComponentExt,
 };
-use crate::sys::utils::CFReleaser;
-use crate::ComponentExt;
 
 pub(crate) struct Components {
     pub inner: Vec<Component>,
@@ -49,7 +51,8 @@ impl Components {
                         Some(c) => c,
                         None => return,
                     };
-                // Without this call, client is freed during the execution of the program. It must be kept!
+                // Without this call, client is freed during the execution of the program. It
+                // must be kept!
                 CFRetain(client.inner() as _);
                 self.client = Some(client);
             }

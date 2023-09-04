@@ -2,8 +2,10 @@
 
 use crate::{DiskUsage, Gid, Pid, ProcessExt, ProcessRefreshKind, ProcessStatus, Signal, Uid};
 
-use std::fmt;
-use std::path::{Path, PathBuf};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+};
 
 use libc::kill;
 
@@ -217,8 +219,8 @@ pub(crate) unsafe fn get_process_data(
 
     if let Some(proc_) = (*wrap.0.get()).get_mut(&Pid(kproc.ki_pid)) {
         proc_.updated = true;
-        // If the `start_time` we just got is different from the one stored, it means it's not the
-        // same process.
+        // If the `start_time` we just got is different from the one stored, it means
+        // it's not the same process.
         if proc_.start_time == start_time {
             proc_.cpu_usage = cpu_usage;
             proc_.parent = parent;
@@ -251,8 +253,8 @@ pub(crate) unsafe fn get_process_data(
         &mut buffer,
     )
     .unwrap_or_default();
-    // For some reason, it can return completely invalid path like `p\u{5}`. So we need to use
-    // procstat to get around this problem.
+    // For some reason, it can return completely invalid path like `p\u{5}`. So we
+    // need to use procstat to get around this problem.
     // let cwd = get_sys_value_str(
     //     &[
     //         libc::CTL_KERN,

@@ -6,10 +6,12 @@
 // transposed to rust we only read `u32` or `i32` values.
 use crate::ComponentExt;
 
-use std::collections::HashMap;
-use std::fs::{read_dir, File};
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{read_dir, File},
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 #[doc = include_str!("../../md_doc/component.md")]
 #[derive(Default)]
@@ -172,8 +174,8 @@ impl From<u8> for TermalSensorType {
     }
 }
 
-/// Check given `item` dispatch to read the right `file` with the right parsing and store data in
-/// given `component`. `id` is provided for `label` creation.
+/// Check given `item` dispatch to read the right `file` with the right parsing
+/// and store data in given `component`. `id` is provided for `label` creation.
 fn fill_component(component: &mut Component, item: &str, folder: &Path, file: &str) {
     let hwmon_file = folder.join(file);
     match item {
@@ -210,8 +212,9 @@ fn fill_component(component: &mut Component, item: &str, folder: &Path, file: &s
 
 impl Component {
     /// Read out `hwmon` info (hardware monitor) from `folder`
-    /// to get values' path to be used on refresh as well as files containing `max`,
-    /// `critical value` and `label`. Then we store everything into `components`.
+    /// to get values' path to be used on refresh as well as files containing
+    /// `max`, `critical value` and `label`. Then we store everything into
+    /// `components`.
     ///
     /// Note that a thermal [Component] must have a way to read its temperature.
     /// If not, it will be ignored and not added into `components`.
@@ -228,7 +231,8 @@ impl Component {
     /// - Optional: max threshold value defined in `tempN_max`
     /// - Optional: critical threshold value defined in `tempN_crit`
     ///
-    /// Where `N` is a `u32` associated to a sensor like `temp1_max`, `temp1_input`.
+    /// Where `N` is a `u32` associated to a sensor like `temp1_max`,
+    /// `temp1_input`.
     ///
     /// ## Doc to Linux kernel API.
     ///

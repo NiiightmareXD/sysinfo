@@ -1,14 +1,19 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use std::ffi::OsString;
-use std::os::windows::prelude::OsStringExt;
-use std::ptr::null_mut;
+use std::{ffi::OsString, os::windows::prelude::OsStringExt, ptr::null_mut};
 
-use winapi::shared::winerror::{ERROR_BUFFER_OVERFLOW, ERROR_SUCCESS};
-use winapi::shared::ws2def::AF_UNSPEC;
-use winapi::um::iphlpapi::GetAdaptersAddresses;
-use winapi::um::iptypes::{
-    GAA_FLAG_SKIP_ANYCAST, GAA_FLAG_SKIP_DNS_SERVER, GAA_FLAG_SKIP_MULTICAST, PIP_ADAPTER_ADDRESSES,
+use winapi::{
+    shared::{
+        winerror::{ERROR_BUFFER_OVERFLOW, ERROR_SUCCESS},
+        ws2def::AF_UNSPEC,
+    },
+    um::{
+        iphlpapi::GetAdaptersAddresses,
+        iptypes::{
+            GAA_FLAG_SKIP_ANYCAST, GAA_FLAG_SKIP_DNS_SERVER, GAA_FLAG_SKIP_MULTICAST,
+            PIP_ADAPTER_ADDRESSES,
+        },
+    },
 };
 
 use crate::common::MacAddr;
@@ -107,10 +112,11 @@ pub(crate) fn get_interface_address() -> Result<InterfaceAddressIterator, String
             } else if ret != ERROR_BUFFER_OVERFLOW {
                 break;
             }
-            // if the given memory size is too small to hold the adapter information,
-            // the SizePointer returned will point to the required size of the buffer,
-            // and we should continue.
-            // Otherwise, break the loop and check the return code again
+            // if the given memory size is too small to hold the adapter
+            // information, the SizePointer returned will point to
+            // the required size of the buffer, and we should
+            // continue. Otherwise, break the loop and check the
+            // return code again
         }
 
         Err(format!("GetAdaptersAddresses() failed with code {ret}"))

@@ -1,8 +1,10 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use std::fs::File;
-use std::io::{self, Read, Seek};
-use std::path::{Path, PathBuf};
+use std::{
+    fs::File,
+    io::{self, Read, Seek},
+    path::{Path, PathBuf},
+};
 
 use crate::sys::system::REMAINING_FILES;
 
@@ -70,14 +72,16 @@ impl Drop for FileCounter {
     }
 }
 
-/// This type is used in `retrieve_all_new_process_info` because we have a "parent" path and
-/// from it, we `pop`/`join` every time because it's more memory efficient than using `Path::join`.
+/// This type is used in `retrieve_all_new_process_info` because we have a
+/// "parent" path and from it, we `pop`/`join` every time because it's more
+/// memory efficient than using `Path::join`.
 pub(crate) struct PathHandler(PathBuf);
 
 impl PathHandler {
     pub(crate) fn new(path: &Path) -> Self {
-        // `path` is the "parent" for all paths which will follow so we add a fake element at
-        // the end since every `PathHandler::join` call will first call `pop` internally.
+        // `path` is the "parent" for all paths which will follow so we add a fake
+        // element at the end since every `PathHandler::join` call will first
+        // call `pop` internally.
         Self(path.join("a"))
     }
 }
@@ -94,7 +98,8 @@ impl PathPush for PathHandler {
     }
 }
 
-// This implementation allows to skip one allocation that is done in `PathHandler`.
+// This implementation allows to skip one allocation that is done in
+// `PathHandler`.
 impl PathPush for PathBuf {
     fn join(&mut self, p: &str) -> &Path {
         self.push(p);
@@ -112,7 +117,8 @@ pub(crate) fn to_u64(v: &[u8]) -> u64 {
     x
 }
 
-/// Converts a path to a NUL-terminated `Vec<u8>` suitable for use with C functions.
+/// Converts a path to a NUL-terminated `Vec<u8>` suitable for use with C
+/// functions.
 pub(crate) fn to_cpath(path: &std::path::Path) -> Vec<u8> {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
 

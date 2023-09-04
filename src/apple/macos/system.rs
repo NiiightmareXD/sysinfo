@@ -68,13 +68,13 @@ impl SystemTimeInfo {
         unsafe {
             let clock_ticks_per_sec = sysconf(_SC_CLK_TCK);
 
-            // FIXME: Maybe check errno here? Problem is that if errno is not 0 before this call,
-            //        we will get an error which isn't related...
+            // FIXME: Maybe check errno here? Problem is that if errno is not 0 before this
+            // call,        we will get an error which isn't related...
             // if let Some(er) = std::io::Error::last_os_error().raw_os_error() {
             //     if err != 0 {
             //         println!("==> {:?}", er);
-            //         sysinfo_debug!("Failed to get _SC_CLK_TCK value, using old CPU tick measure system");
-            //         return None;
+            //         sysinfo_debug!("Failed to get _SC_CLK_TCK value, using old CPU tick
+            // measure system");         return None;
             //     }
             // }
 

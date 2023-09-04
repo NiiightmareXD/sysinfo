@@ -1,13 +1,15 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use std::ffi::OsStr;
-use std::os::windows::ffi::OsStrExt;
-use std::time::SystemTime;
+use std::{ffi::OsStr, os::windows::ffi::OsStrExt, time::SystemTime};
 
-use windows::core::PCWSTR;
-use windows::Win32::Foundation::{ERROR_MORE_DATA, ERROR_SUCCESS, FILETIME, WIN32_ERROR};
-use windows::Win32::System::Registry::{
-    RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, KEY_READ, REG_VALUE_TYPE,
+use windows::{
+    core::PCWSTR,
+    Win32::{
+        Foundation::{ERROR_MORE_DATA, ERROR_SUCCESS, FILETIME, WIN32_ERROR},
+        System::Registry::{
+            RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, KEY_READ, REG_VALUE_TYPE,
+        },
+    },
 };
 
 #[inline]

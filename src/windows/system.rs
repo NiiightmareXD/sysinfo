@@ -5,36 +5,47 @@ use crate::{
     SystemExt, User,
 };
 
-use crate::sys::component::{self, Component};
-use crate::sys::cpu::*;
-use crate::sys::process::{get_start_time, update_memory, Process};
-use crate::sys::tools::*;
-use crate::sys::users::get_users;
-use crate::sys::utils::{get_now, get_reg_string_value, get_reg_value_u32};
+use crate::sys::{
+    component::{self, Component},
+    cpu::*,
+    process::{get_start_time, update_memory, Process},
+    tools::*,
+    users::get_users,
+    utils::{get_now, get_reg_string_value, get_reg_value_u32},
+};
 
 use crate::utils::into_iter;
 
-use std::cell::UnsafeCell;
-use std::collections::HashMap;
-use std::mem::{size_of, zeroed};
-use std::ptr;
-use std::time::{Duration, SystemTime};
+use std::{
+    cell::UnsafeCell,
+    collections::HashMap,
+    mem::{size_of, zeroed},
+    ptr,
+    time::{Duration, SystemTime},
+};
 
-use ntapi::ntexapi::{
-    NtQuerySystemInformation, SystemProcessInformation, SYSTEM_PROCESS_INFORMATION,
+use winapi::{
+    ctypes::wchar_t,
+    shared::{
+        minwindef::{FALSE, TRUE},
+        ntstatus::STATUS_INFO_LENGTH_MISMATCH,
+    },
+    um::{
+        minwinbase::STILL_ACTIVE,
+        processthreadsapi::GetExitCodeProcess,
+        psapi::{GetPerformanceInfo, PERFORMANCE_INFORMATION},
+        sysinfoapi::{
+            ComputerNamePhysicalDnsHostname, GetComputerNameExW, GetTickCount64,
+            GlobalMemoryStatusEx, MEMORYSTATUSEX,
+        },
+        winnt::HANDLE,
+    },
 };
-use winapi::ctypes::wchar_t;
-use winapi::shared::minwindef::{FALSE, TRUE};
-use winapi::shared::ntstatus::{STATUS_INFO_LENGTH_MISMATCH, STATUS_SUCCESS};
-use winapi::um::minwinbase::STILL_ACTIVE;
-use winapi::um::processthreadsapi::GetExitCodeProcess;
-use winapi::um::psapi::{GetPerformanceInfo, PERFORMANCE_INFORMATION};
-use winapi::um::sysinfoapi::{
-    ComputerNamePhysicalDnsHostname, GetComputerNameExW, GetTickCount64, GlobalMemoryStatusEx,
-    MEMORYSTATUSEX,
+use windows::{
+    Wdk::System::SystemInformation::{NtQuerySystemInformation, SystemProcessInformation},
+    Win32::System::Registry::HKEY_LOCAL_MACHINE,
 };
-use winapi::um::winnt::HANDLE;
-use windows::Win32::System::Registry::HKEY_LOCAL_MACHINE;
+use windows_native::ntexapi::SYSTEM_PROCESS_INFORMATION;
 
 declare_signals! {
     (),
@@ -240,9 +251,10 @@ impl SystemExt for System {
                     &mut cb_needed,
                 );
 
-                if ntstatus == STATUS_SUCCESS {
+                if ntstatus.is_ok() {
                     break;
-                } else if ntstatus == STATUS_INFO_LENGTH_MISMATCH {
+                } else if ntstatus.err().unwrap_unchecked().code().0 == STATUS_INFO_LENGTH_MISMATCH
+                {
                     // GetNewBufferSize
                     if cb_needed == 0 {
                         buffer_size *= 2;
@@ -282,8 +294,8 @@ impl SystemExt for System {
             process_ids.push(Wrap(p));
 
             // read_unaligned is necessary to avoid
-            // misaligned pointer dereference: address must be a multiple of 0x8 but is 0x...
-            // under x86_64 wine (and possibly other systems)
+            // misaligned pointer dereference: address must be a multiple of 0x8 but is
+            // 0x... under x86_64 wine (and possibly other systems)
             let pi = unsafe { ptr::read_unaligned(p) };
 
             if pi.NextEntryOffset == 0 {
@@ -310,7 +322,7 @@ impl SystemExt for System {
             .filter_map(|pi| {
                 // as above, read_unaligned is necessary
                 let pi = unsafe { ptr::read_unaligned(pi.0) };
-                let pid = Pid(pi.UniqueProcessId as _);
+                let pid = Pid(pi.UniqueProcessId.0 as _);
                 if let Some(proc_) = unsafe { (*process_list.0.get()).get_mut(&pid) } {
                     if proc_
                         .get_start_time()
@@ -328,8 +340,8 @@ impl SystemExt for System {
                 let name = get_process_name(&pi, pid);
                 let mut p = Process::new_full(
                     pid,
-                    if pi.InheritedFromUniqueProcessId as usize != 0 {
-                        Some(Pid(pi.InheritedFromUniqueProcessId as _))
+                    if pi.InheritedFromUniqueProcessId.0 as usize != 0 {
+                        Some(Pid(pi.InheritedFromUniqueProcessId.0 as _))
                     } else {
                         None
                     },
@@ -519,8 +531,8 @@ pub(crate) fn is_proc_running(handle: HANDLE) -> bool {
     }
 }
 
-/// If it returns `None`, it means that the PID owner changed and that the `Process` must be
-/// completely recomputed.
+/// If it returns `None`, it means that the PID owner changed and that the
+/// `Process` must be completely recomputed.
 fn refresh_existing_process(
     proc_: &mut Process,
     nb_cpus: u64,
@@ -558,7 +570,7 @@ pub(crate) fn get_process_name(process: &SYSTEM_PROCESS_INFORMATION, process_id:
     } else {
         unsafe {
             let slice = std::slice::from_raw_parts(
-                name.Buffer,
+                name.Buffer.0,
                 // The length is in bytes, not the length of string
                 name.Length as usize / std::mem::size_of::<u16>(),
             );
@@ -570,9 +582,9 @@ pub(crate) fn get_process_name(process: &SYSTEM_PROCESS_INFORMATION, process_id:
 
 fn get_dns_hostname() -> Option<String> {
     let mut buffer_size = 0;
-    // Running this first to get the buffer size since the DNS name can be longer than MAX_COMPUTERNAME_LENGTH
-    // setting the `lpBuffer` to null will return the buffer size
-    // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getcomputernameexw
+    // Running this first to get the buffer size since the DNS name can be longer
+    // than MAX_COMPUTERNAME_LENGTH setting the `lpBuffer` to null will return
+    // the buffer size https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getcomputernameexw
     unsafe {
         GetComputerNameExW(
             ComputerNamePhysicalDnsHostname,

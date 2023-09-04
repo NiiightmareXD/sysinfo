@@ -1,8 +1,7 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
 use super::utils::{show_error, TestResult};
-use std::ffi::OsStr;
-use std::path::Path;
+use std::{ffi::OsStr, path::Path};
 
 fn to_correct_name(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
@@ -98,7 +97,8 @@ pub fn check_docs(content: &str, p: &Path) -> TestResult {
         nb_errors: 0,
     };
 
-    // No need to check if we are in the `src` folder or if we are in a `ffi.rs` file.
+    // No need to check if we are in the `src` folder or if we are in a `ffi.rs`
+    // file.
     if p.parent().unwrap().file_name().unwrap() == OsStr::new("src")
         || p.file_name().unwrap() == OsStr::new("ffi.rs")
     {

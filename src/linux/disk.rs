@@ -1,14 +1,17 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::utils::{get_all_data, to_cpath};
-use crate::{DiskExt, DiskKind, Disks, DisksExt};
+use crate::{
+    sys::utils::{get_all_data, to_cpath},
+    DiskExt, DiskKind, Disks, DisksExt,
+};
 
 use libc::statvfs;
-use std::ffi::{OsStr, OsString};
-use std::fs;
-use std::mem;
-use std::os::unix::ffi::OsStrExt;
-use std::path::{Path, PathBuf};
+use std::{
+    ffi::{OsStr, OsString},
+    fs, mem,
+    os::unix::ffi::OsStrExt,
+    path::{Path, PathBuf},
+};
 
 macro_rules! cast {
     ($x:expr) => {
@@ -130,15 +133,14 @@ fn new_disk(
 #[allow(clippy::manual_range_contains)]
 fn find_type_for_device_name(device_name: &OsStr) -> DiskKind {
     // The format of devices are as follows:
-    //  - device_name is symbolic link in the case of /dev/mapper/
-    //     and /dev/root, and the target is corresponding device under
-    //     /sys/block/
-    //  - In the case of /dev/sd, the format is /dev/sd[a-z][1-9],
-    //     corresponding to /sys/block/sd[a-z]
+    //  - device_name is symbolic link in the case of /dev/mapper/ and /dev/root,
+    //    and the target is corresponding device under /sys/block/
+    //  - In the case of /dev/sd, the format is /dev/sd[a-z][1-9], corresponding to
+    //    /sys/block/sd[a-z]
     //  - In the case of /dev/nvme, the format is /dev/nvme[0-9]n[0-9]p[0-9],
-    //     corresponding to /sys/block/nvme[0-9]n[0-9]
+    //    corresponding to /sys/block/nvme[0-9]n[0-9]
     //  - In the case of /dev/mmcblk, the format is /dev/mmcblk[0-9]p[0-9],
-    //     corresponding to /sys/block/mmcblk[0-9]
+    //    corresponding to /sys/block/mmcblk[0-9]
     let device_name_path = device_name.to_str().unwrap_or_default();
     let real_path = fs::canonicalize(device_name).unwrap_or_else(|_| PathBuf::from(device_name));
     let mut real_path = real_path.to_str().unwrap_or_default();
@@ -180,7 +182,8 @@ fn find_type_for_device_name(device_name: &OsStr) -> DiskKind {
         .to_owned()
         .join(trimmed)
         .join("queue/rotational");
-    // Normally, this file only contains '0' or '1' but just in case, we get 8 bytes...
+    // Normally, this file only contains '0' or '1' but just in case, we get 8
+    // bytes...
     match get_all_data(path, 8)
         .unwrap_or_default()
         .trim()
@@ -200,8 +203,8 @@ fn find_type_for_device_name(device_name: &OsStr) -> DiskKind {
 
 fn get_all_disks(container: &mut Vec<Disk>, content: &str) {
     container.clear();
-    // The goal of this array is to list all removable devices (the ones whose name starts with
-    // "usb-").
+    // The goal of this array is to list all removable devices (the ones whose name
+    // starts with "usb-").
     let removable_entries = match fs::read_dir("/dev/disk/by-id/") {
         Ok(r) => r
             .filter_map(|res| Some(res.ok()?.path()))
@@ -281,21 +284,22 @@ fn get_all_disks(container: &mut Vec<Disk>, content: &str) {
 //     let disks = get_all_disks_inner(
 //         r#"tmpfs /proc tmpfs rw,seclabel,relatime 0 0
 // proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
-// systemd-1 /proc/sys/fs/binfmt_misc autofs rw,relatime,fd=29,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=17771 0 0
-// tmpfs /sys tmpfs rw,seclabel,relatime 0 0
+// systemd-1 /proc/sys/fs/binfmt_misc autofs
+// rw,relatime,fd=29,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,
+// pipe_ino=17771 0 0 tmpfs /sys tmpfs rw,seclabel,relatime 0 0
 // sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0
-// securityfs /sys/kernel/security securityfs rw,nosuid,nodev,noexec,relatime 0 0
-// cgroup2 /sys/fs/cgroup cgroup2 rw,seclabel,nosuid,nodev,noexec,relatime,nsdelegate 0 0
-// pstore /sys/fs/pstore pstore rw,seclabel,nosuid,nodev,noexec,relatime 0 0
-// none /sys/fs/bpf bpf rw,nosuid,nodev,noexec,relatime,mode=700 0 0
-// configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
-// selinuxfs /sys/fs/selinux selinuxfs rw,relatime 0 0
-// debugfs /sys/kernel/debug debugfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0
-// tmpfs /dev/shm tmpfs rw,seclabel,relatime 0 0
-// devpts /dev/pts devpts rw,seclabel,relatime,gid=5,mode=620,ptmxmode=666 0 0
-// tmpfs /sys/fs/selinux tmpfs rw,seclabel,relatime 0 0
-// /dev/vda2 /proc/filesystems xfs rw,seclabel,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota 0 0
-// "#,
+// securityfs /sys/kernel/security securityfs rw,nosuid,nodev,noexec,relatime 0
+// 0 cgroup2 /sys/fs/cgroup cgroup2
+// rw,seclabel,nosuid,nodev,noexec,relatime,nsdelegate 0 0 pstore /sys/fs/pstore
+// pstore rw,seclabel,nosuid,nodev,noexec,relatime 0 0 none /sys/fs/bpf bpf
+// rw,nosuid,nodev,noexec,relatime,mode=700 0 0 configfs /sys/kernel/config
+// configfs rw,nosuid,nodev,noexec,relatime 0 0 selinuxfs /sys/fs/selinux
+// selinuxfs rw,relatime 0 0 debugfs /sys/kernel/debug debugfs
+// rw,seclabel,nosuid,nodev,noexec,relatime 0 0 tmpfs /dev/shm tmpfs
+// rw,seclabel,relatime 0 0 devpts /dev/pts devpts
+// rw,seclabel,relatime,gid=5,mode=620,ptmxmode=666 0 0 tmpfs /sys/fs/selinux
+// tmpfs rw,seclabel,relatime 0 0 /dev/vda2 /proc/filesystems xfs
+// rw,seclabel,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota 0 0 "#,
 //     );
 //     assert_eq!(disks.len(), 1);
 //     assert_eq!(

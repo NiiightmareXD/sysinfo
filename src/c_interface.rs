@@ -2,8 +2,7 @@
 
 use crate::{CpuExt, NetworkExt, NetworksExt, Pid, Process, ProcessExt, System, SystemExt};
 use libc::{self, c_char, c_float, c_uint, c_void, pid_t, size_t};
-use std::borrow::BorrowMut;
-use std::ffi::CString;
+use std::{borrow::BorrowMut, ffi::CString};
 
 /// Equivalent of [`System`][crate::System] struct.
 pub type CSystem = *mut c_void;
@@ -30,7 +29,8 @@ pub extern "C" fn sysinfo_destroy(system: CSystem) {
     }
 }
 
-/// Equivalent of [`System::refresh_system()`][crate::System#method.refresh_system].
+/// Equivalent of
+/// [`System::refresh_system()`][crate::System#method.refresh_system].
 #[no_mangle]
 pub extern "C" fn sysinfo_refresh_system(system: CSystem) {
     assert!(!system.is_null());
@@ -44,7 +44,8 @@ pub extern "C" fn sysinfo_refresh_system(system: CSystem) {
     }
 }
 
-/// Equivalent of [`System::refresh_memory()`][crate::System#method.refresh_memory].
+/// Equivalent of
+/// [`System::refresh_memory()`][crate::System#method.refresh_memory].
 #[no_mangle]
 pub extern "C" fn sysinfo_refresh_memory(system: CSystem) {
     assert!(!system.is_null());
@@ -72,7 +73,8 @@ pub extern "C" fn sysinfo_refresh_cpu(system: CSystem) {
     }
 }
 
-/// Equivalent of [`System::refresh_components()`][crate::System#method.refresh_temperatures].
+/// Equivalent of
+/// [`System::refresh_components()`][crate::System#method.refresh_temperatures].
 #[no_mangle]
 pub extern "C" fn sysinfo_refresh_components(system: CSystem) {
     assert!(!system.is_null());
@@ -100,7 +102,8 @@ pub extern "C" fn sysinfo_refresh_all(system: CSystem) {
     }
 }
 
-/// Equivalent of [`System::refresh_processes()`][crate::System#method.refresh_processes].
+/// Equivalent of
+/// [`System::refresh_processes()`][crate::System#method.refresh_processes].
 #[no_mangle]
 pub extern "C" fn sysinfo_refresh_processes(system: CSystem) {
     assert!(!system.is_null());
@@ -114,7 +117,8 @@ pub extern "C" fn sysinfo_refresh_processes(system: CSystem) {
     }
 }
 
-/// Equivalent of [`System::refresh_process()`][crate::System#method.refresh_process].
+/// Equivalent of
+/// [`System::refresh_process()`][crate::System#method.refresh_process].
 #[cfg(target_os = "linux")]
 #[no_mangle]
 pub extern "C" fn sysinfo_refresh_process(system: CSystem, pid: pid_t) {
@@ -129,7 +133,8 @@ pub extern "C" fn sysinfo_refresh_process(system: CSystem, pid: pid_t) {
     }
 }
 
-/// Equivalent of [`System::refresh_disks()`][crate::System#method.refresh_disks].
+/// Equivalent of
+/// [`System::refresh_disks()`][crate::System#method.refresh_disks].
 #[no_mangle]
 pub extern "C" fn sysinfo_refresh_disks(system: CSystem) {
     assert!(!system.is_null());
@@ -143,7 +148,8 @@ pub extern "C" fn sysinfo_refresh_disks(system: CSystem) {
     }
 }
 
-/// Equivalent of [`System::refresh_disks_list()`][crate::System#method.refresh_disks_list].
+/// Equivalent of
+/// [`System::refresh_disks_list()`][crate::System#method.refresh_disks_list].
 #[no_mangle]
 pub extern "C" fn sysinfo_refresh_disks_list(system: CSystem) {
     assert!(!system.is_null());
@@ -228,7 +234,8 @@ pub extern "C" fn sysinfo_used_swap(system: CSystem) -> size_t {
 }
 
 /// Equivalent of
-/// `system::networks().iter().fold(0, |acc, (_, data)| acc + data.received() as size_t)`.
+/// `system::networks().iter().fold(0, |acc, (_, data)| acc + data.received() as
+/// size_t)`.
 #[no_mangle]
 pub extern "C" fn sysinfo_networks_received(system: CSystem) -> size_t {
     assert!(!system.is_null());
@@ -243,7 +250,8 @@ pub extern "C" fn sysinfo_networks_received(system: CSystem) -> size_t {
 }
 
 /// Equivalent of
-/// `system::networks().iter().fold(0, |acc, (_, data)| acc + data.transmitted() as size_t)`.
+/// `system::networks().iter().fold(0, |acc, (_, data)| acc + data.transmitted()
+/// as size_t)`.
 #[no_mangle]
 pub extern "C" fn sysinfo_networks_transmitted(system: CSystem) -> size_t {
     assert!(!system.is_null());
@@ -288,12 +296,13 @@ pub extern "C" fn sysinfo_cpus_usage(
     }
 }
 
-/// Equivalent of [`System::processes()`][crate::System#method.processes]. Returns an
-/// array ended by a null pointer. Must be freed.
+/// Equivalent of [`System::processes()`][crate::System#method.processes].
+/// Returns an array ended by a null pointer. Must be freed.
 ///
 /// # ⚠️ WARNING ⚠️
 ///
-/// While having this method returned processes, you should *never* call any refresh method!
+/// While having this method returned processes, you should *never* call any
+/// refresh method!
 #[no_mangle]
 pub extern "C" fn sysinfo_processes(
     system: CSystem,
@@ -342,11 +351,13 @@ pub extern "C" fn sysinfo_process_by_pid(system: CSystem, pid: pid_t) -> CProces
     }
 }
 
-/// Equivalent of iterating over [`Process::tasks()`][crate::Process#method.tasks].
+/// Equivalent of iterating over
+/// [`Process::tasks()`][crate::Process#method.tasks].
 ///
 /// # ⚠️ WARNING ⚠️
 ///
-/// While having this method processes, you should *never* call any refresh method!
+/// While having this method processes, you should *never* call any refresh
+/// method!
 #[cfg(target_os = "linux")]
 #[no_mangle]
 pub extern "C" fn sysinfo_process_tasks(
@@ -404,7 +415,8 @@ pub extern "C" fn sysinfo_process_memory(process: CProcess) -> size_t {
     unsafe { (*process).memory() as usize }
 }
 
-/// Equivalent of [`Process::virtual_memory()`][crate::Process#method.virtual_memory].
+/// Equivalent of
+/// [`Process::virtual_memory()`][crate::Process#method.virtual_memory].
 #[no_mangle]
 pub extern "C" fn sysinfo_process_virtual_memory(process: CProcess) -> size_t {
     assert!(!process.is_null());

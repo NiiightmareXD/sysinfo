@@ -1,7 +1,9 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::cpu::{self, Cpu, Query};
-use crate::CpuRefreshKind;
+use crate::{
+    sys::cpu::{self, Cpu, Query},
+    CpuRefreshKind,
+};
 
 use std::mem::zeroed;
 

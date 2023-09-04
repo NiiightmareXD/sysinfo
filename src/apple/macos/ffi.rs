@@ -1,8 +1,10 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use core_foundation_sys::base::{mach_port_t, CFAllocatorRef};
-use core_foundation_sys::dictionary::{CFDictionaryRef, CFMutableDictionaryRef};
-use core_foundation_sys::string::CFStringRef;
+use core_foundation_sys::{
+    base::{mach_port_t, CFAllocatorRef},
+    dictionary::{CFDictionaryRef, CFMutableDictionaryRef},
+    string::CFStringRef,
+};
 
 use libc::{c_char, kern_return_t};
 
@@ -15,8 +17,8 @@ pub type io_object_t = mach_port_t;
 pub type io_iterator_t = io_object_t;
 #[allow(non_camel_case_types)]
 pub type io_registry_entry_t = io_object_t;
-// This is a hack, `io_name_t` should normally be `[c_char; 128]` but Rust makes it very annoying
-// to deal with that so we go around it a bit.
+// This is a hack, `io_name_t` should normally be `[c_char; 128]` but Rust makes
+// it very annoying to deal with that so we go around it a bit.
 #[allow(non_camel_case_types, dead_code)]
 pub type io_name = [c_char; 128];
 #[allow(non_camel_case_types)]
@@ -36,11 +38,13 @@ pub const kIOPropertyMediumTypeSolidStateKey: &str = "Solid State";
 pub const kIOPropertyMediumTypeRotationalKey: &str = "Rotational";
 
 // Based on https://github.com/libusb/libusb/blob/bed8d3034eac74a6e1ba123b5c270ea63cb6cf1a/libusb/os/darwin_usb.c#L54-L55,
-// we can simply set it to 0 (and is the same value as its replacement `kIOMainPortDefault`).
+// we can simply set it to 0 (and is the same value as its replacement
+// `kIOMainPortDefault`).
 #[allow(non_upper_case_globals)]
 pub const kIOMasterPortDefault: mach_port_t = 0;
 
-// Note: Obtaining information about disks using IOKIt is allowed inside the default macOS App Sandbox.
+// Note: Obtaining information about disks using IOKIt is allowed inside the
+// default macOS App Sandbox.
 #[link(name = "IOKit", kind = "framework")]
 extern "C" {
     pub fn IOServiceGetMatchingServices(
@@ -79,7 +83,8 @@ extern "C" {
 pub const KIO_RETURN_SUCCESS: i32 = 0;
 
 extern "C" {
-    // FIXME: to be removed once higher version than core_foundation_sys 0.8.4 is released.
+    // FIXME: to be removed once higher version than core_foundation_sys 0.8.4 is
+    // released.
     #[allow(dead_code)]
     pub fn CFStringCreateWithCStringNoCopy(
         alloc: CFAllocatorRef,
@@ -193,14 +198,16 @@ mod io_service {
     use std::ptr::null;
 
     use super::CFStringCreateWithCStringNoCopy;
-    use core_foundation_sys::array::CFArrayRef;
-    use core_foundation_sys::base::{CFAllocatorRef, CFRelease};
-    use core_foundation_sys::dictionary::{
-        kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks, CFDictionaryCreate,
-        CFDictionaryRef,
+    use core_foundation_sys::{
+        array::CFArrayRef,
+        base::{CFAllocatorRef, CFRelease},
+        dictionary::{
+            kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks, CFDictionaryCreate,
+            CFDictionaryRef,
+        },
+        number::{kCFNumberSInt32Type, CFNumberCreate},
+        string::CFStringRef,
     };
-    use core_foundation_sys::number::{kCFNumberSInt32Type, CFNumberCreate};
-    use core_foundation_sys::string::CFStringRef;
 
     #[repr(C)]
     pub struct __IOHIDServiceClient(libc::c_void);
@@ -229,7 +236,7 @@ mod io_service {
     #[cfg(not(feature = "apple-sandbox"))]
     extern "C" {
         pub fn IOHIDEventSystemClientCreate(allocator: CFAllocatorRef)
-            -> IOHIDEventSystemClientRef;
+        -> IOHIDEventSystemClientRef;
 
         pub fn IOHIDEventSystemClientSetMatching(
             client: IOHIDEventSystemClientRef,

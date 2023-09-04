@@ -1,7 +1,9 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::{ffi, macos::utils::IOReleaser};
-use crate::ComponentExt;
+use crate::{
+    sys::{ffi, macos::utils::IOReleaser},
+    ComponentExt,
+};
 
 use libc::{c_char, c_int, c_void};
 
@@ -13,16 +15,17 @@ const COMPONENTS_TEMPERATURE_IDS: &[(&str, &[i8])] = &[
     (
         "CPU Proximity",
         &['T' as i8, 'C' as i8, '0' as i8, 'P' as i8],
-    ), // CPU Proximity (heat spreader) "TC0P"
-    ("GPU", &['T' as i8, 'G' as i8, '0' as i8, 'P' as i8]),      // GPU "TG0P"
-    ("Battery", &['T' as i8, 'B' as i8, '0' as i8, 'T' as i8]),  // Battery "TB0T"
+    ), /* CPU Proximity (heat
+                                                                  * spreader) "TC0P" */
+    ("GPU", &['T' as i8, 'G' as i8, '0' as i8, 'P' as i8]), // GPU "TG0P"
+    ("Battery", &['T' as i8, 'B' as i8, '0' as i8, 'T' as i8]), // Battery "TB0T"
 ];
 
 pub(crate) struct ComponentFFI {
     input_structure: ffi::KeyData_t,
     val: ffi::Val_t,
-    /// It is the `System::connection`. We need it to not require an extra argument
-    /// in `ComponentExt::refresh`.
+    /// It is the `System::connection`. We need it to not require an extra
+    /// argument in `ComponentExt::refresh`.
     connection: ffi::io_connect_t,
 }
 
@@ -44,7 +47,8 @@ impl ComponentFFI {
     }
 }
 
-/// Used to get CPU information, not supported on iOS, or inside the default macOS sandbox.
+/// Used to get CPU information, not supported on iOS, or inside the default
+/// macOS sandbox.
 pub(crate) struct Components {
     pub inner: Vec<Component>,
     connection: Option<IoService>,
@@ -257,11 +261,7 @@ pub(crate) struct IoService(ffi::io_connect_t);
 
 impl IoService {
     fn new(obj: ffi::io_connect_t) -> Option<Self> {
-        if obj == 0 {
-            None
-        } else {
-            Some(Self(obj))
-        }
+        if obj == 0 { None } else { Some(Self(obj)) }
     }
 
     pub(crate) fn inner(&self) -> ffi::io_connect_t {
@@ -291,7 +291,9 @@ impl IoService {
             let iterator = match IOReleaser::new(iterator) {
                 Some(i) => i,
                 None => {
-                    sysinfo_debug!("Error: IOServiceGetMatchingServices() succeeded but returned invalid descriptor");
+                    sysinfo_debug!(
+                        "Error: IOServiceGetMatchingServices() succeeded but returned invalid descriptor"
+                    );
                     return None;
                 }
             };

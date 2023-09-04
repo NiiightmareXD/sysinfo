@@ -3,17 +3,11 @@
 use crate::{
     common::{Gid, MacAddr, Uid},
     sys::{Component, Cpu, Disk, Process},
-};
-use crate::{
     CpuRefreshKind, DiskKind, DiskUsage, Disks, Group, LoadAvg, Networks, NetworksIter, Pid,
     ProcessRefreshKind, ProcessStatus, RefreshKind, Signal, User,
 };
 
-use std::collections::HashMap;
-use std::ffi::OsStr;
-use std::fmt::Debug;
-use std::path::Path;
-use std::time::Duration;
+use std::{collections::HashMap, ffi::OsStr, fmt::Debug, path::Path, time::Duration};
 
 /// Contains all the methods of the [`Disk`][crate::Disk] struct.
 ///
@@ -53,7 +47,8 @@ pub trait DiskExt: Debug {
     /// ```
     fn name(&self) -> &OsStr;
 
-    /// Returns the file system used on this disk (so for example: `EXT4`, `NTFS`, etc...).
+    /// Returns the file system used on this disk (so for example: `EXT4`,
+    /// `NTFS`, etc...).
     ///
     /// ```no_run
     /// use sysinfo::{DiskExt, System, SystemExt};
@@ -134,10 +129,11 @@ pub trait DiskExt: Debug {
 
 /// Contains all the methods of the [`Process`][crate::Process] struct.
 pub trait ProcessExt: Debug {
-    /// Sends [`Signal::Kill`] to the process (which is the only signal supported on all supported
-    /// platforms by this crate).
+    /// Sends [`Signal::Kill`] to the process (which is the only signal
+    /// supported on all supported platforms by this crate).
     ///
-    /// If you want to send another signal, take a look at [`ProcessExt::kill_with`].
+    /// If you want to send another signal, take a look at
+    /// [`ProcessExt::kill_with`].
     ///
     /// To get the list of the supported signals on this system, use
     /// [`SystemExt::SUPPORTED_SIGNALS`].
@@ -154,9 +150,9 @@ pub trait ProcessExt: Debug {
         self.kill_with(Signal::Kill).unwrap_or(false)
     }
 
-    /// Sends the given `signal` to the process. If the signal doesn't exist on this platform,
-    /// it'll do nothing and will return `None`. Otherwise it'll return if the signal was sent
-    /// successfully.
+    /// Sends the given `signal` to the process. If the signal doesn't exist on
+    /// this platform, it'll do nothing and will return `None`. Otherwise
+    /// it'll return if the signal was sent successfully.
     ///
     /// If you just want to kill the process, use [`ProcessExt::kill`] directly.
     ///
@@ -183,8 +179,9 @@ pub trait ProcessExt: Debug {
     ///  1. It is limited to 15 characters.
     ///  2. It is not always the exe name.
     ///
-    /// If you are looking for a specific process, unless you know what you are doing, in most
-    /// cases it's better to use [`ProcessExt::exe`] instead (which can be empty sometimes!).
+    /// If you are looking for a specific process, unless you know what you are
+    /// doing, in most cases it's better to use [`ProcessExt::exe`] instead
+    /// (which can be empty sometimes!).
     ///
     /// ```no_run
     /// use sysinfo::{Pid, ProcessExt, System, SystemExt};
@@ -352,14 +349,16 @@ pub trait ProcessExt: Debug {
     /// ```
     fn run_time(&self) -> u64;
 
-    /// Returns the total CPU usage (in %). Notice that it might be bigger than 100 if run on a
-    /// multi-core machine.
+    /// Returns the total CPU usage (in %). Notice that it might be bigger than
+    /// 100 if run on a multi-core machine.
     ///
-    /// If you want a value between 0% and 100%, divide the returned value by the number of CPUs.
+    /// If you want a value between 0% and 100%, divide the returned value by
+    /// the number of CPUs.
     ///
-    /// ⚠️ To start to have accurate CPU usage, a process needs to be refreshed **twice** because
-    /// CPU usage computation is based on time diff (process time on a given time period divided by
-    /// total system time on the same time period).
+    /// ⚠️ To start to have accurate CPU usage, a process needs to be refreshed
+    /// **twice** because CPU usage computation is based on time diff
+    /// (process time on a given time period divided by total system time on
+    /// the same time period).
     ///
     /// ⚠️ If you want accurate CPU usage number, better leave a bit of time
     /// between two calls of this method (take a look at
@@ -377,7 +376,8 @@ pub trait ProcessExt: Debug {
 
     /// Returns number of bytes read and written to disk.
     ///
-    /// ⚠️ On Windows and FreeBSD, this method actually returns **ALL** I/O read and written bytes.
+    /// ⚠️ On Windows and FreeBSD, this method actually returns **ALL** I/O read
+    /// and written bytes.
     ///
     /// ```no_run
     /// use sysinfo::{Pid, ProcessExt, System, SystemExt};
@@ -397,9 +397,9 @@ pub trait ProcessExt: Debug {
     /// ```
     fn disk_usage(&self) -> DiskUsage;
 
-    /// Returns the ID of the owner user of this process or `None` if this information couldn't
-    /// be retrieved. If you want to get the [`User`] from it, take a look at
-    /// [`SystemExt::get_user_by_id`].
+    /// Returns the ID of the owner user of this process or `None` if this
+    /// information couldn't be retrieved. If you want to get the [`User`]
+    /// from it, take a look at [`SystemExt::get_user_by_id`].
     ///
     /// ```no_run
     /// use sysinfo::{Pid, ProcessExt, System, SystemExt};
@@ -412,12 +412,13 @@ pub trait ProcessExt: Debug {
     /// ```
     fn user_id(&self) -> Option<&Uid>;
 
-    /// Returns the user ID of the effective owner of this process or `None` if this information
-    /// couldn't be retrieved. If you want to get the [`User`] from it, take a look at
-    /// [`SystemExt::get_user_by_id`].
+    /// Returns the user ID of the effective owner of this process or `None` if
+    /// this information couldn't be retrieved. If you want to get the
+    /// [`User`] from it, take a look at [`SystemExt::get_user_by_id`].
     ///
-    /// If you run something with `sudo`, the real user ID of the launched process will be the ID of
-    /// the user you are logged in as but effective user ID will be `0` (i-e root).
+    /// If you run something with `sudo`, the real user ID of the launched
+    /// process will be the ID of the user you are logged in as but
+    /// effective user ID will be `0` (i-e root).
     ///
     /// ⚠️ It always returns `None` on Windows.
     ///
@@ -449,8 +450,9 @@ pub trait ProcessExt: Debug {
 
     /// Returns the effective group ID of the process.
     ///
-    /// If you run something with `sudo`, the real group ID of the launched process will be the
-    /// primary group ID you are logged in as but effective group ID will be `0` (i-e root).
+    /// If you run something with `sudo`, the real group ID of the launched
+    /// process will be the primary group ID you are logged in as but
+    /// effective group ID will be `0` (i-e root).
     ///
     /// ⚠️ It always returns `None` on Windows.
     ///
@@ -480,7 +482,8 @@ pub trait ProcessExt: Debug {
     /// ```
     fn wait(&self);
 
-    /// Returns the session ID for the current process or `None` if it couldn't be retrieved.
+    /// Returns the session ID for the current process or `None` if it couldn't
+    /// be retrieved.
     ///
     /// ⚠️ This information is computed every time this method is called.
     ///
@@ -500,8 +503,9 @@ pub trait ProcessExt: Debug {
 pub trait CpuExt: Debug {
     /// Returns this CPU's usage.
     ///
-    /// Note: You'll need to refresh it at least twice (diff between the first and the second is
-    /// how CPU usage is computed) at first if you want to have a non-zero value.
+    /// Note: You'll need to refresh it at least twice (diff between the first
+    /// and the second is how CPU usage is computed) at first if you want to
+    /// have a non-zero value.
     ///
     /// ```no_run
     /// use sysinfo::{CpuExt, System, SystemExt, RefreshKind, CpuRefreshKind};
@@ -575,7 +579,8 @@ pub trait CpuExt: Debug {
 /// Contains all the methods of the [`System`][crate::System] type.
 pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// Returns `true` if this OS is supported. Please refer to the
-    /// [crate-level documentation](index.html) to get the list of supported OSes.
+    /// [crate-level documentation](index.html) to get the list of supported
+    /// OSes.
     ///
     /// ```
     /// use sysinfo::{System, SystemExt};
@@ -598,14 +603,15 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// ```
     const SUPPORTED_SIGNALS: &'static [Signal];
 
-    /// This is the minimum interval time used internally by `sysinfo` to refresh the CPU time.
+    /// This is the minimum interval time used internally by `sysinfo` to
+    /// refresh the CPU time.
     ///
     /// ⚠️ This value differs from one OS to another.
     ///
     /// Why is this constant even needed?
     ///
-    /// If refreshed too often, the CPU usage of processes will be `0` whereas on Linux it'll
-    /// always be the maximum value (`number of CPUs * 100`).
+    /// If refreshed too often, the CPU usage of processes will be `0` whereas
+    /// on Linux it'll always be the maximum value (`number of CPUs * 100`).
     const MINIMUM_CPU_UPDATE_INTERVAL: Duration;
 
     /// Creates a new [`System`] instance with nothing loaded. If you want to
@@ -613,8 +619,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// `refresh_*_list` methods. [`SystemExt::refresh_networks_list`] for
     /// example.
     ///
-    /// Use the [`refresh_all`] method to update its internal information (or any of the `refresh_`
-    /// method).
+    /// Use the [`refresh_all`] method to update its internal information (or
+    /// any of the `refresh_` method).
     ///
     /// [`System`]: crate::System
     /// [`refresh_all`]: #method.refresh_all
@@ -630,7 +636,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Creates a new [`System`] instance with everything loaded.
     ///
-    /// It is an equivalent of [`SystemExt::new_with_specifics`]`(`[`RefreshKind::everything`]`())`.
+    /// It is an equivalent of
+    /// [`SystemExt::new_with_specifics`]`(`[`RefreshKind::everything`]`())`.
     ///
     /// [`System`]: crate::System
     ///
@@ -643,8 +650,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
         Self::new_with_specifics(RefreshKind::everything())
     }
 
-    /// Creates a new [`System`] instance and refresh the data corresponding to the
-    /// given [`RefreshKind`].
+    /// Creates a new [`System`] instance and refresh the data corresponding to
+    /// the given [`RefreshKind`].
     ///
     /// [`System`]: crate::System
     ///
@@ -668,8 +675,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// ```
     fn new_with_specifics(refreshes: RefreshKind) -> Self;
 
-    /// Refreshes according to the given [`RefreshKind`]. It calls the corresponding
-    /// "refresh_" methods.
+    /// Refreshes according to the given [`RefreshKind`]. It calls the
+    /// corresponding "refresh_" methods.
     ///
     /// ```
     /// use sysinfo::{ProcessRefreshKind, RefreshKind, System, SystemExt};
@@ -711,10 +718,11 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
         }
     }
 
-    /// Refreshes all system, processes, disks and network interfaces information.
+    /// Refreshes all system, processes, disks and network interfaces
+    /// information.
     ///
-    /// Please note that it doesn't recompute disks list, components list, network interfaces
-    /// list nor users list.
+    /// Please note that it doesn't recompute disks list, components list,
+    /// network interfaces list nor users list.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -729,10 +737,12 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
         self.refresh_networks();
     }
 
-    /// Refreshes system information (RAM, swap, CPU usage and components' temperature).
+    /// Refreshes system information (RAM, swap, CPU usage and components'
+    /// temperature).
     ///
-    /// If you want some more specific refreshes, you might be interested into looking at
-    /// [`refresh_memory`], [`refresh_cpu`] and [`refresh_components`].
+    /// If you want some more specific refreshes, you might be interested into
+    /// looking at [`refresh_memory`], [`refresh_cpu`] and
+    /// [`refresh_components`].
     ///
     /// [`refresh_memory`]: SystemExt::refresh_memory
     /// [`refresh_cpu`]: SystemExt::refresh_memory
@@ -762,10 +772,12 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Refreshes CPUs information.
     ///
-    /// ⚠️ Please note that the result will very likely be inaccurate at the first call.
-    /// You need to call this method at least twice (with a bit of time between each call, like
-    /// 200 ms, take a look at [`SystemExt::MINIMUM_CPU_UPDATE_INTERVAL`] for more information)
-    /// to get accurate value as it uses previous results to compute the next value.
+    /// ⚠️ Please note that the result will very likely be inaccurate at the
+    /// first call. You need to call this method at least twice (with a bit
+    /// of time between each call, like 200 ms, take a look at
+    /// [`SystemExt::MINIMUM_CPU_UPDATE_INTERVAL`] for more information)
+    /// to get accurate value as it uses previous results to compute the next
+    /// value.
     ///
     /// Calling this method is the same as calling
     /// `refresh_cpu_specifics(CpuRefreshKind::new().with_cpu_usage())`.
@@ -782,8 +794,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Refreshes CPUs specific information.
     ///
-    /// Please note that it doesn't recompute disks list, components list, network interfaces
-    /// list nor users list.
+    /// Please note that it doesn't recompute disks list, components list,
+    /// network interfaces list nor users list.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt, CpuRefreshKind};
@@ -822,9 +834,11 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Gets all processes and updates their information.
     ///
-    /// It does the same as `system.refresh_processes_specifics(ProcessRefreshKind::everything())`.
+    /// It does the same as
+    /// `system.refresh_processes_specifics(ProcessRefreshKind::everything())`.
     ///
-    /// ⚠️ On Linux, `sysinfo` keeps the `stat` files open by default. You can change this behaviour
+    /// ⚠️ On Linux, `sysinfo` keeps the `stat` files open by default. You can
+    /// change this behaviour
     /// by using [`set_open_files_limit`][crate::set_open_files_limit].
     ///
     /// ```no_run
@@ -839,7 +853,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Gets all processes and updates the specified information.
     ///
-    /// ⚠️ On Linux, `sysinfo` keeps the `stat` files open by default. You can change this behaviour
+    /// ⚠️ On Linux, `sysinfo` keeps the `stat` files open by default. You can
+    /// change this behaviour
     /// by using [`set_open_files_limit`][crate::set_open_files_limit].
     ///
     /// ```no_run
@@ -850,9 +865,10 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// ```
     fn refresh_processes_specifics(&mut self, refresh_kind: ProcessRefreshKind);
 
-    /// Refreshes *only* the process corresponding to `pid`. Returns `false` if the process doesn't
-    /// exist (it will **NOT** be removed from the processes if it doesn't exist anymore). If it
-    /// isn't listed yet, it'll be added.
+    /// Refreshes *only* the process corresponding to `pid`. Returns `false` if
+    /// the process doesn't exist (it will **NOT** be removed from the
+    /// processes if it doesn't exist anymore). If it isn't listed yet,
+    /// it'll be added.
     ///
     /// It is the same as calling
     /// `sys.refresh_process_specifics(pid, ProcessRefreshKind::everything())`.
@@ -867,9 +883,10 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
         self.refresh_process_specifics(pid, ProcessRefreshKind::everything())
     }
 
-    /// Refreshes *only* the process corresponding to `pid`. Returns `false` if the process doesn't
-    /// exist (it will **NOT** be removed from the processes if it doesn't exist anymore). If it
-    /// isn't listed yet, it'll be added.
+    /// Refreshes *only* the process corresponding to `pid`. Returns `false` if
+    /// the process doesn't exist (it will **NOT** be removed from the
+    /// processes if it doesn't exist anymore). If it isn't listed yet,
+    /// it'll be added.
     ///
     /// ```no_run
     /// use sysinfo::{Pid, ProcessRefreshKind, System, SystemExt};
@@ -896,12 +913,12 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// ## Linux
     ///
     /// ⚠️ On Linux, the [NFS](https://en.wikipedia.org/wiki/Network_File_System) file
-    /// systems are ignored and the information of a mounted NFS **cannot** be obtained
-    /// via [`SystemExt::refresh_disks_list`]. This is due to the fact that I/O function
-    /// `statvfs` used by [`SystemExt::refresh_disks_list`] is blocking and
-    /// [may hang](https://github.com/GuillaumeGomez/sysinfo/pull/876) in some cases,
-    /// requiring to call `systemctl stop` to terminate the NFS service from the remote
-    /// server in some cases.
+    /// systems are ignored and the information of a mounted NFS **cannot** be
+    /// obtained via [`SystemExt::refresh_disks_list`]. This is due to the
+    /// fact that I/O function `statvfs` used by
+    /// [`SystemExt::refresh_disks_list`] is blocking and [may hang](https://github.com/GuillaumeGomez/sysinfo/pull/876) in some cases,
+    /// requiring to call `systemctl stop` to terminate the NFS service from the
+    /// remote server in some cases.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -945,8 +962,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
         self.networks_mut().refresh();
     }
 
-    /// The network list will be updated: removing not existing anymore interfaces and adding new
-    /// ones.
+    /// The network list will be updated: removing not existing anymore
+    /// interfaces and adding new ones.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -980,7 +997,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// ```
     fn processes(&self) -> &HashMap<Pid, Process>;
 
-    /// Returns the process corresponding to the given `pid` or `None` if no such process exists.
+    /// Returns the process corresponding to the given `pid` or `None` if no
+    /// such process exists.
     ///
     /// ```no_run
     /// use sysinfo::{Pid, ProcessExt, System, SystemExt};
@@ -994,8 +1012,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns an iterator of process containing the given `name`.
     ///
-    /// If you want only the processes with exactly the given `name`, take a look at
-    /// [`SystemExt::processes_by_exact_name`].
+    /// If you want only the processes with exactly the given `name`, take a
+    /// look at [`SystemExt::processes_by_exact_name`].
     ///
     /// **⚠️ Important ⚠️**
     ///
@@ -1011,7 +1029,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     ///     println!("{} {}", process.pid(), process.name());
     /// }
     /// ```
-    // FIXME: replace the returned type with `impl Iterator<Item = &Process>` when it's supported!
+    // FIXME: replace the returned type with `impl Iterator<Item = &Process>` when
+    // it's supported!
     fn processes_by_name<'a: 'b, 'b>(
         &'a self,
         name: &'b str,
@@ -1042,7 +1061,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     ///     println!("{} {}", process.pid(), process.name());
     /// }
     /// ```
-    // FIXME: replace the returned type with `impl Iterator<Item = &Process>` when it's supported!
+    // FIXME: replace the returned type with `impl Iterator<Item = &Process>` when
+    // it's supported!
     fn processes_by_exact_name<'a: 'b, 'b>(
         &'a self,
         name: &'b str,
@@ -1056,8 +1076,9 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns "global" CPUs information (aka the addition of all the CPUs).
     ///
-    /// To have up-to-date information, you need to call [`SystemExt::refresh_cpu`] or
-    /// [`SystemExt::refresh_specifics`] with `cpu` enabled.
+    /// To have up-to-date information, you need to call
+    /// [`SystemExt::refresh_cpu`] or [`SystemExt::refresh_specifics`] with
+    /// `cpu` enabled.
     ///
     /// ```no_run
     /// use sysinfo::{CpuRefreshKind, CpuExt, RefreshKind, System, SystemExt};
@@ -1071,8 +1092,9 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the list of the CPUs.
     ///
-    /// By default, the list of CPUs is empty until you call [`SystemExt::refresh_cpu`] or
-    /// [`SystemExt::refresh_specifics`] with `cpu` enabled.
+    /// By default, the list of CPUs is empty until you call
+    /// [`SystemExt::refresh_cpu`] or [`SystemExt::refresh_specifics`] with
+    /// `cpu` enabled.
     ///
     /// ```no_run
     /// use sysinfo::{CpuRefreshKind, CpuExt, RefreshKind, System, SystemExt};
@@ -1086,11 +1108,14 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// ```
     fn cpus(&self) -> &[Cpu];
 
-    /// Returns the number of physical cores on the CPU or `None` if it couldn't get it.
+    /// Returns the number of physical cores on the CPU or `None` if it couldn't
+    /// get it.
     ///
-    /// In case there are multiple CPUs, it will combine the physical core count of all the CPUs.
+    /// In case there are multiple CPUs, it will combine the physical core count
+    /// of all the CPUs.
     ///
-    /// **Important**: this information is computed every time this function is called.
+    /// **Important**: this information is computed every time this function is
+    /// called.
     ///
     /// ```no_run
     /// use sysinfo::{CpuExt, System, SystemExt};
@@ -1112,11 +1137,12 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the amount of free RAM in bytes.
     ///
-    /// Generally, "free" memory refers to unallocated memory whereas "available" memory refers to
-    /// memory that is available for (re)use.
+    /// Generally, "free" memory refers to unallocated memory whereas
+    /// "available" memory refers to memory that is available for (re)use.
     ///
-    /// Side note: Windows doesn't report "free" memory so this method returns the same value
-    /// as [`get_available_memory`](#tymethod.available_memory).
+    /// Side note: Windows doesn't report "free" memory so this method returns
+    /// the same value as [`get_available_memory`](#tymethod.
+    /// available_memory).
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1128,11 +1154,11 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the amount of available RAM in bytes.
     ///
-    /// Generally, "free" memory refers to unallocated memory whereas "available" memory refers to
-    /// memory that is available for (re)use.
+    /// Generally, "free" memory refers to unallocated memory whereas
+    /// "available" memory refers to memory that is available for (re)use.
     ///
-    /// ⚠️ Windows and FreeBSD don't report "available" memory so [`SystemExt::free_memory`]
-    /// returns the same value as this method.
+    /// ⚠️ Windows and FreeBSD don't report "available" memory so
+    /// [`SystemExt::free_memory`] returns the same value as this method.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1245,11 +1271,12 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Sort the disk list with the provided callback.
     ///
-    /// Internally, it is using the [`slice::sort_unstable_by`] function, so please refer to it
-    /// for implementation details.
+    /// Internally, it is using the [`slice::sort_unstable_by`] function, so
+    /// please refer to it for implementation details.
     ///
-    /// ⚠️ If you use [`SystemExt::refresh_disks_list`], you need to use this method before using
-    /// [`SystemExt::disks`] or [`SystemExt::disks_mut`] if you want them to be sorted.
+    /// ⚠️ If you use [`SystemExt::refresh_disks_list`], you need to use this
+    /// method before using [`SystemExt::disks`] or [`SystemExt::disks_mut`]
+    /// if you want them to be sorted.
     fn sort_disks_by<F>(&mut self, compare: F)
     where
         F: FnMut(&Disk, &Disk) -> std::cmp::Ordering,
@@ -1324,7 +1351,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the system name.
     ///
-    /// **Important**: this information is computed every time this function is called.
+    /// **Important**: this information is computed every time this function is
+    /// called.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1336,7 +1364,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the system's kernel version.
     ///
-    /// **Important**: this information is computed every time this function is called.
+    /// **Important**: this information is computed every time this function is
+    /// called.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1346,9 +1375,11 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// ```
     fn kernel_version(&self) -> Option<String>;
 
-    /// Returns the system version (e.g. for MacOS this will return 11.1 rather than the kernel version).
+    /// Returns the system version (e.g. for MacOS this will return 11.1 rather
+    /// than the kernel version).
     ///
-    /// **Important**: this information is computed every time this function is called.
+    /// **Important**: this information is computed every time this function is
+    /// called.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1360,7 +1391,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the system long os version (e.g "MacOS 11.2 BigSur").
     ///
-    /// **Important**: this information is computed every time this function is called.
+    /// **Important**: this information is computed every time this function is
+    /// called.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1377,7 +1409,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
     /// - <https://www.freedesktop.org/software/systemd/man/os-release.html#ID=>
     /// - <https://doc.rust-lang.org/std/env/consts/constant.OS.html>
     ///
-    /// **Important**: this information is computed every time this function is called.
+    /// **Important**: this information is computed every time this function is
+    /// called.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1389,7 +1422,8 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the system hostname based off DNS
     ///
-    /// **Important**: this information is computed every time this function is called.
+    /// **Important**: this information is computed every time this function is
+    /// called.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt};
@@ -1401,8 +1435,9 @@ pub trait SystemExt: Sized + Debug + Default + Send + Sync {
 
     /// Returns the [`User`] matching the given `user_id`.
     ///
-    /// **Important**: The user list must be filled before using this method, otherwise it will
-    /// always return `None` (through the `refresh_*` methods).
+    /// **Important**: The user list must be filled before using this method,
+    /// otherwise it will always return `None` (through the `refresh_*`
+    /// methods).
     ///
     /// It is a shorthand for:
     ///
@@ -1667,8 +1702,8 @@ pub trait DisksExt: Debug {
 
     /// Sort the disk list with the provided callback.
     ///
-    /// Internally, it is using the [`slice::sort_unstable_by`] function, so please refer to it
-    /// for implementation details.
+    /// Internally, it is using the [`slice::sort_unstable_by`] function, so
+    /// please refer to it for implementation details.
     ///
     /// You can do the same without this method by calling:
     ///
@@ -1682,8 +1717,9 @@ pub trait DisksExt: Debug {
     /// });
     /// ```
     ///
-    /// ⚠️ If you use [`SystemExt::refresh_disks_list`], you need to use this method before using
-    /// [`SystemExt::disks`] or [`SystemExt::disks_mut`] if you want them to be sorted again.
+    /// ⚠️ If you use [`SystemExt::refresh_disks_list`], you need to use this
+    /// method before using [`SystemExt::disks`] or [`SystemExt::disks_mut`]
+    /// if you want them to be sorted again.
     fn sort_by<F>(&mut self, compare: F)
     where
         F: FnMut(&Disk, &Disk) -> std::cmp::Ordering,
@@ -1710,12 +1746,12 @@ pub trait DisksExt: Debug {
     /// ## Linux
     ///
     /// ⚠️ On Linux, the [NFS](https://en.wikipedia.org/wiki/Network_File_System) file
-    /// systems are ignored and the information of a mounted NFS **cannot** be obtained
-    /// via [`SystemExt::refresh_disks_list`]. This is due to the fact that I/O function
-    /// `statvfs` used by [`SystemExt::refresh_disks_list`] is blocking and
-    /// [may hang](https://github.com/GuillaumeGomez/sysinfo/pull/876) in some cases,
-    /// requiring to call `systemctl stop` to terminate the NFS service from the remote
-    /// server in some cases.
+    /// systems are ignored and the information of a mounted NFS **cannot** be
+    /// obtained via [`SystemExt::refresh_disks_list`]. This is due to the
+    /// fact that I/O function `statvfs` used by
+    /// [`SystemExt::refresh_disks_list`] is blocking and [may hang](https://github.com/GuillaumeGomez/sysinfo/pull/876) in some cases,
+    /// requiring to call `systemctl stop` to terminate the NFS service from the
+    /// remote server in some cases.
     ///
     /// ```no_run
     /// use sysinfo::{DisksExt, System, SystemExt};
@@ -1764,7 +1800,8 @@ pub trait ComponentExt: Debug {
     /// Returns `f32::NAN` if it failed to retrieve it.
     fn max(&self) -> f32;
 
-    /// Returns the highest temperature before the component halts (in celsius degree).
+    /// Returns the highest temperature before the component halts (in celsius
+    /// degree).
     ///
     /// ```no_run
     /// use sysinfo::{ComponentExt, System, SystemExt};
@@ -1845,12 +1882,12 @@ pub trait UserExt: Debug + PartialEq + Eq + PartialOrd + Ord {
 
     /// Returns the group ID of the user.
     ///
-    /// ⚠️ This information is not set on Windows.  Windows doesn't have a `username` specific
-    /// group assigned to the user. They do however have unique
-    /// [Security Identifiers](https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers)
+    /// ⚠️ This information is not set on Windows.  Windows doesn't have a
+    /// `username` specific group assigned to the user. They do however have
+    /// unique [Security Identifiers](https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers)
     /// made up of various [Components](https://docs.microsoft.com/en-us/windows/win32/secauthz/sid-components).
-    /// Pieces of the SID may be a candidate for this field, but it doesn't map well to a single
-    /// group ID.
+    /// Pieces of the SID may be a candidate for this field, but it doesn't map
+    /// well to a single group ID.
     ///
     /// ```no_run
     /// use sysinfo::{System, SystemExt, UserExt};

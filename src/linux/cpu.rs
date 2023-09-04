@@ -2,13 +2,14 @@
 
 #![allow(clippy::too_many_arguments)]
 
-use std::collections::HashSet;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
-use std::time::Instant;
+use std::{
+    collections::HashSet,
+    fs::File,
+    io::{BufRead, BufReader, Read},
+    time::Instant,
+};
 
-use crate::sys::utils::to_u64;
-use crate::{CpuExt, CpuRefreshKind, SystemExt};
+use crate::{sys::utils::to_u64, CpuExt, CpuRefreshKind, SystemExt};
 
 macro_rules! to_str {
     ($e:expr) => {
@@ -19,13 +20,16 @@ macro_rules! to_str {
 pub(crate) struct CpusWrapper {
     pub(crate) global_cpu: Cpu,
     pub(crate) cpus: Vec<Cpu>,
-    /// Field set to `false` in `update_cpus` and to `true` in `refresh_processes_specifics`.
+    /// Field set to `false` in `update_cpus` and to `true` in
+    /// `refresh_processes_specifics`.
     ///
-    /// The reason behind this is to avoid calling the `update_cpus` more than necessary.
-    /// For example when running `refresh_all` or `refresh_specifics`.
+    /// The reason behind this is to avoid calling the `update_cpus` more than
+    /// necessary. For example when running `refresh_all` or
+    /// `refresh_specifics`.
     need_cpus_update: bool,
     got_cpu_frequency: bool,
-    /// This field is needed to prevent updating when not enough time passed since last update.
+    /// This field is needed to prevent updating when not enough time passed
+    /// since last update.
     last_update: Option<Instant>,
 }
 
@@ -78,8 +82,8 @@ impl CpusWrapper {
             (String::new(), String::new())
         };
 
-        // If the last CPU usage update is too close (less than `MINIMUM_CPU_UPDATE_INTERVAL`),
-        // we don't want to update CPUs times.
+        // If the last CPU usage update is too close (less than
+        // `MINIMUM_CPU_UPDATE_INTERVAL`), we don't want to update CPUs times.
         if need_cpu_usage_update {
             self.last_update = Some(Instant::now());
             let f = match File::open("/proc/stat") {
@@ -367,11 +371,7 @@ impl Cpu {
     ) {
         macro_rules! min {
             ($a:expr, $b:expr, $def:expr) => {
-                if $a > $b {
-                    ($a - $b) as f32
-                } else {
-                    $def
-                }
+                if $a > $b { ($a - $b) as f32 } else { $def }
             };
         }
         self.old_values = self.new_values;
@@ -509,8 +509,9 @@ pub(crate) fn get_physical_core_count() -> Option<usize> {
 /// This has been obtained from util-linux's lscpu implementation, see
 /// https://github.com/util-linux/util-linux/blob/7076703b529d255600631306419cca1b48ab850a/sys-utils/lscpu-arm.c#L240
 ///
-/// This list will have to be updated every time a new vendor appears, please keep it synchronized
-/// with util-linux and update the link above with the commit you have used.
+/// This list will have to be updated every time a new vendor appears, please
+/// keep it synchronized with util-linux and update the link above with the
+/// commit you have used.
 fn get_arm_implementer(implementer: u32) -> Option<&'static str> {
     Some(match implementer {
         0x41 => "ARM",
@@ -540,8 +541,9 @@ fn get_arm_implementer(implementer: u32) -> Option<&'static str> {
 /// This has been obtained from util-linux's lscpu implementation, see
 /// https://github.com/util-linux/util-linux/blob/7076703b529d255600631306419cca1b48ab850a/sys-utils/lscpu-arm.c#L34
 ///
-/// This list will have to be updated every time a new core appears, please keep it synchronized
-/// with util-linux and update the link above with the commit you have used.
+/// This list will have to be updated every time a new core appears, please keep
+/// it synchronized with util-linux and update the link above with the commit
+/// you have used.
 fn get_arm_part(implementer: u32, part: u32) -> Option<&'static str> {
     Some(match (implementer, part) {
         // ARM
@@ -714,7 +716,8 @@ fn get_arm_part(implementer: u32, part: u32) -> Option<&'static str> {
     })
 }
 
-/// Returns the brand/vendor string for the first CPU (which should be the same for all CPUs).
+/// Returns the brand/vendor string for the first CPU (which should be the same
+/// for all CPUs).
 pub(crate) fn get_vendor_id_and_brand() -> (String, String) {
     let mut s = String::new();
     if File::open("/proc/cpuinfo")
@@ -763,8 +766,9 @@ pub(crate) fn get_vendor_id_and_brand() -> (String, String) {
     }
     if let (Some(implementer), Some(part)) = (implementer, part) {
         vendor_id = get_arm_implementer(implementer).map(String::from);
-        // It's possible to "model name" even with an ARM CPU, so just in case we can't retrieve
-        // the brand from "CPU part", we will then use the value from "model name".
+        // It's possible to "model name" even with an ARM CPU, so just in case we can't
+        // retrieve the brand from "CPU part", we will then use the value from
+        // "model name".
         //
         // Example from raspberry pi 3B+:
         //

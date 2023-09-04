@@ -7,20 +7,28 @@ use crate::{
 };
 
 use std::ptr::null_mut;
-use winapi::shared::lmcons::{MAX_PREFERRED_LENGTH, NET_API_STATUS};
-use winapi::shared::minwindef::{DWORD, LPBYTE};
-use winapi::shared::ntstatus::STATUS_SUCCESS;
-use winapi::shared::winerror::ERROR_MORE_DATA;
-use winapi::um::lmaccess::{
-    NetUserEnum, NetUserGetInfo, NetUserGetLocalGroups, LOCALGROUP_USERS_INFO_0, USER_INFO_23,
+
+use winapi::{
+    shared::{
+        lmcons::{MAX_PREFERRED_LENGTH, NET_API_STATUS},
+        minwindef::{DWORD, LPBYTE},
+        ntdef::{LPWSTR, WCHAR},
+        ntstatus::STATUS_SUCCESS,
+        winerror::ERROR_MORE_DATA,
+    },
+    um::{
+        lmaccess::{
+            NetUserEnum, NetUserGetInfo, NetUserGetLocalGroups, FILTER_NORMAL_ACCOUNT,
+            LG_INCLUDE_INDIRECT, LOCALGROUP_USERS_INFO_0, USER_INFO_0, USER_INFO_23,
+        },
+        lmapibuf::NetApiBufferFree,
+        ntlsa::{
+            LsaEnumerateLogonSessions, LsaFreeReturnBuffer, LsaGetLogonSessionData,
+            SECURITY_LOGON_SESSION_DATA,
+        },
+        winnt::LUID,
+    },
 };
-use winapi::um::lmaccess::{FILTER_NORMAL_ACCOUNT, LG_INCLUDE_INDIRECT, USER_INFO_0};
-use winapi::um::lmapibuf::NetApiBufferFree;
-use winapi::um::ntlsa::{
-    LsaEnumerateLogonSessions, LsaFreeReturnBuffer, LsaGetLogonSessionData,
-    SECURITY_LOGON_SESSION_DATA,
-};
-use winapi::um::winnt::{LPWSTR, LUID, WCHAR};
 use windows::core::PWSTR;
 
 #[doc = include_str!("../../md_doc/user.md")]

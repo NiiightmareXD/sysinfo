@@ -6,18 +6,22 @@ use crate::{
     User,
 };
 
-use std::cell::UnsafeCell;
-use std::collections::HashMap;
-use std::ffi::CStr;
-use std::mem::MaybeUninit;
-use std::path::{Path, PathBuf};
-use std::ptr::NonNull;
-use std::time::Duration;
+use std::{
+    cell::UnsafeCell,
+    collections::HashMap,
+    ffi::CStr,
+    mem::MaybeUninit,
+    path::{Path, PathBuf},
+    ptr::NonNull,
+    time::Duration,
+};
 
-use crate::sys::cpu::{physical_core_count, CpusWrapper};
-use crate::sys::utils::{
-    self, boot_time, c_buf_to_string, from_cstr_array, get_sys_value, get_sys_value_by_name,
-    get_system_info, init_mib,
+use crate::sys::{
+    cpu::{physical_core_count, CpusWrapper},
+    utils::{
+        self, boot_time, c_buf_to_string, from_cstr_array, get_sys_value, get_sys_value_by_name,
+        get_system_info, init_mib,
+    },
 };
 
 use libc::c_int;
@@ -454,8 +458,8 @@ struct SystemInfo {
     hostname: [c_int; 2],
     buf_space: [c_int; 2],
     kd: NonNull<libc::kvm_t>,
-    /// From FreeBSD manual: "The kernel fixed-point scale factor". It's used when computing
-    /// processes' CPU usage.
+    /// From FreeBSD manual: "The kernel fixed-point scale factor". It's used
+    /// when computing processes' CPU usage.
     fscale: f32,
     procstat: *mut libc::procstat,
     zfs: Zfs,
@@ -546,7 +550,8 @@ impl SystemInfo {
     }
 
     fn get_os_release(&self) -> Option<String> {
-        // It returns something like "13.0-RELEASE". We want to keep everything until the "-".
+        // It returns something like "13.0-RELEASE". We want to keep everything until
+        // the "-".
         get_system_info(&[self.os_release[0], self.os_release[1]], None)
             .and_then(|s| s.split('-').next().map(|s| s.to_owned()))
     }
@@ -557,8 +562,8 @@ impl SystemInfo {
 
     /// Returns (used, total).
     fn get_swap_info(&self) -> (u64, u64) {
-        // Magic number used in htop. Cannot find how they got it when reading `kvm_getswapinfo`
-        // source code so here we go...
+        // Magic number used in htop. Cannot find how they got it when reading
+        // `kvm_getswapinfo` source code so here we go...
         const LEN: usize = 16;
         let mut swap = MaybeUninit::<[libc::kvm_swap; LEN]>::uninit();
         unsafe {
@@ -590,8 +595,8 @@ impl SystemInfo {
                 return nb_pages.saturating_mul(self.page_size as _);
             }
 
-            // This is a fallback. It includes all the available memory, not just the one available for
-            // the users.
+            // This is a fallback. It includes all the available memory, not just the one
+            // available for the users.
             let mut total_memory: u64 = 0;
             get_sys_value(&self.hw_physical_memory, &mut total_memory);
             total_memory
@@ -607,8 +612,9 @@ impl SystemInfo {
             get_sys_value(&self.virtual_wire_count, &mut mem_wire);
 
             let mut mem_wire = mem_wire.saturating_mul(self.page_size as _);
-            // We need to subtract "ZFS ARC" from the "wired memory" because it should belongs to cache
-            // but the kernel reports it as "wired memory" instead...
+            // We need to subtract "ZFS ARC" from the "wired memory" because it should
+            // belongs to cache but the kernel reports it as "wired memory"
+            // instead...
             if let Some(arc_size) = self.zfs.arc_size() {
                 mem_wire = mem_wire.saturating_sub(arc_size);
             }

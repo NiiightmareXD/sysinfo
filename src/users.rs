@@ -6,8 +6,7 @@ use crate::{
 };
 
 use libc::{getgrgid_r, getgrouplist};
-use std::fs::File;
-use std::io::Read;
+use std::{fs::File, io::Read};
 
 #[doc = include_str!("../md_doc/user.md")]
 pub struct User {

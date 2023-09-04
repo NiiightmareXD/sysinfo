@@ -1,21 +1,27 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use std::cell::UnsafeCell;
-use std::collections::HashMap;
-use std::fmt;
-use std::fs::{self, File};
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::{
+    cell::UnsafeCell,
+    collections::HashMap,
+    fmt,
+    fs::{self, File},
+    io::Read,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use libc::{gid_t, kill, uid_t};
 
-use crate::sys::system::SystemInfo;
-use crate::sys::utils::{
-    get_all_data, get_all_data_from_file, realpath, FileCounter, PathHandler, PathPush,
+use crate::{
+    sys::{
+        system::SystemInfo,
+        utils::{
+            get_all_data, get_all_data_from_file, realpath, FileCounter, PathHandler, PathPush,
+        },
+    },
+    utils::into_iter,
+    DiskUsage, Gid, Pid, ProcessExt, ProcessRefreshKind, ProcessStatus, Signal, Uid,
 };
-use crate::utils::into_iter;
-use crate::{DiskUsage, Gid, Pid, ProcessExt, ProcessRefreshKind, ProcessStatus, Signal, Uid};
 
 #[doc(hidden)]
 impl From<char> for ProcessStatus {
@@ -246,13 +252,14 @@ impl ProcessExt for Process {
 }
 
 pub(crate) fn compute_cpu_usage(p: &mut Process, total_time: f32, max_value: f32) {
-    // First time updating the values without reference, wait for a second cycle to update cpu_usage
+    // First time updating the values without reference, wait for a second cycle to
+    // update cpu_usage
     if p.old_utime == 0 && p.old_stime == 0 {
         return;
     }
 
-    // We use `max_value` to ensure that the process CPU usage will never get bigger than:
-    // `"number of CPUs" * 100.`
+    // We use `max_value` to ensure that the process CPU usage will never get bigger
+    // than: `"number of CPUs" * 100.`
     p.cpu_usage = (p
         .utime
         .saturating_sub(p.old_utime)
@@ -328,8 +335,8 @@ unsafe impl<'a, T> Sync for Wrap<'a, T> {}
 
 #[inline(always)]
 fn compute_start_time_without_boot_time(parts: &[&str], info: &SystemInfo) -> u64 {
-    // To be noted that the start time is invalid here, it still needs to be converted into
-    // "real" time.
+    // To be noted that the start time is invalid here, it still needs to be
+    // converted into "real" time.
     u64::from_str(parts[21]).unwrap_or(0) / info.clock_cycle
 }
 
@@ -469,9 +476,10 @@ pub(crate) fn _get_process_data(
         let parts = parse_stat_file(&data).ok_or(())?;
         let start_time_without_boot_time = compute_start_time_without_boot_time(&parts, info);
 
-        // It's possible that a new process took this same PID when the "original one" terminated.
-        // If the start time differs, then it means it's not the same process anymore and that we
-        // need to get all its information, hence why we check it here.
+        // It's possible that a new process took this same PID when the "original one"
+        // terminated. If the start time differs, then it means it's not the
+        // same process anymore and that we need to get all its information,
+        // hence why we check it here.
         if start_time_without_boot_time == entry.start_time_without_boot_time {
             get_status(entry, parts[2]);
             update_time_and_memory(
@@ -504,7 +512,8 @@ pub(crate) fn _get_process_data(
         return Ok((Some(p), pid));
     };
 
-    // If we're here, it means that the PID still exists but it's a different process.
+    // If we're here, it means that the PID still exists but it's a different
+    // process.
     let p = retrieve_all_new_process_info(pid, proc_list, &parts, path, info, refresh_kind, uptime);
     match proc_list.tasks.get_mut(&pid) {
         Some(ref mut entry) => **entry = p,
@@ -575,11 +584,7 @@ pub(crate) fn refresh_procs(
             let entry = entry.ok()?;
             let entry = entry.path();
 
-            if entry.is_dir() {
-                Some(entry)
-            } else {
-                None
-            }
+            if entry.is_dir() { Some(entry) } else { None }
         })
         .collect::<Vec<_>>();
     if pid.0 == 0 {

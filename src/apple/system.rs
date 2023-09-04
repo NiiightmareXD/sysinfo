@@ -1,9 +1,11 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::component::Component;
-use crate::sys::cpu::*;
-use crate::sys::process::*;
-use crate::sys::utils::{get_sys_value, get_sys_value_by_name};
+use crate::sys::{
+    component::Component,
+    cpu::*,
+    process::*,
+    utils::{get_sys_value, get_sys_value_by_name},
+};
 
 use crate::{
     CpuRefreshKind, Disks, LoadAvg, Networks, Pid, ProcessRefreshKind, RefreshKind, SystemExt, User,
@@ -12,12 +14,9 @@ use crate::{
 #[cfg(all(target_os = "macos", not(feature = "apple-sandbox")))]
 use crate::ProcessExt;
 
-use std::cell::UnsafeCell;
-use std::collections::HashMap;
-use std::mem;
-use std::time::Duration;
 #[cfg(all(target_os = "macos", not(feature = "apple-sandbox")))]
 use std::time::SystemTime;
+use std::{cell::UnsafeCell, collections::HashMap, mem, time::Duration};
 
 #[cfg(all(target_os = "macos", not(feature = "apple-sandbox")))]
 use libc::size_t;

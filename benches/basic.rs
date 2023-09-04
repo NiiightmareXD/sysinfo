@@ -2,8 +2,7 @@
 
 extern crate test;
 
-use sysinfo::get_current_pid;
-use sysinfo::{DiskExt, SystemExt};
+use sysinfo::{get_current_pid, DiskExt, SystemExt};
 
 #[bench]
 fn bench_new(b: &mut test::Bencher) {

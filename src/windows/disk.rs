@@ -2,24 +2,30 @@
 
 use crate::{DiskExt, DiskKind, Disks, DisksExt};
 
-use std::ffi::{OsStr, OsString};
-use std::mem::size_of;
-use std::path::Path;
+use std::{
+    ffi::{OsStr, OsString},
+    mem::size_of,
+    path::Path,
+};
 
-use winapi::ctypes::c_void;
-use winapi::shared::minwindef::{DWORD, MAX_PATH};
-use winapi::um::fileapi::{
-    CreateFileW, GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives, GetVolumeInformationW,
-    OPEN_EXISTING,
+use winapi::{
+    ctypes::c_void,
+    shared::minwindef::{DWORD, MAX_PATH},
+    um::{
+        fileapi::{
+            CreateFileW, GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives,
+            GetVolumeInformationW, OPEN_EXISTING,
+        },
+        handleapi::{CloseHandle, INVALID_HANDLE_VALUE},
+        ioapiset::DeviceIoControl,
+        winbase::{DRIVE_FIXED, DRIVE_REMOVABLE},
+        winioctl::{
+            PropertyStandardQuery, StorageDeviceSeekPenaltyProperty, IOCTL_STORAGE_QUERY_PROPERTY,
+            STORAGE_PROPERTY_QUERY,
+        },
+        winnt::{BOOLEAN, FILE_SHARE_READ, FILE_SHARE_WRITE, HANDLE, ULARGE_INTEGER},
+    },
 };
-use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
-use winapi::um::ioapiset::DeviceIoControl;
-use winapi::um::winbase::{DRIVE_FIXED, DRIVE_REMOVABLE};
-use winapi::um::winioctl::{
-    PropertyStandardQuery, StorageDeviceSeekPenaltyProperty, IOCTL_STORAGE_QUERY_PROPERTY,
-    STORAGE_PROPERTY_QUERY,
-};
-use winapi::um::winnt::{BOOLEAN, FILE_SHARE_READ, FILE_SHARE_WRITE, HANDLE, ULARGE_INTEGER};
 
 #[doc = include_str!("../../md_doc/disk.md")]
 pub struct Disk {
@@ -250,11 +256,7 @@ unsafe fn get_disks() -> Vec<Disk> {
                 DiskKind::Unknown(-1)
             } else {
                 let is_ssd = result.IncursSeekPenalty == 0;
-                if is_ssd {
-                    DiskKind::SSD
-                } else {
-                    DiskKind::HDD
-                }
+                if is_ssd { DiskKind::SSD } else { DiskKind::HDD }
             };
             Some(Disk {
                 type_,

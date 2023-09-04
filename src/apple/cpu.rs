@@ -1,12 +1,12 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::utils::{get_sys_value, get_sys_value_by_name};
-use crate::{CpuExt, CpuRefreshKind};
+use crate::{
+    sys::utils::{get_sys_value, get_sys_value_by_name},
+    CpuExt, CpuRefreshKind,
+};
 
 use libc::{c_char, c_void, host_processor_info, mach_port_t, mach_task_self};
-use std::mem;
-use std::ops::Deref;
-use std::sync::Arc;
+use std::{mem, ops::Deref, sync::Arc};
 
 pub(crate) struct CpusWrapper {
     pub(crate) global_cpu: Cpu,
@@ -366,8 +366,8 @@ fn get_sysctl_str(s: &[u8]) -> String {
 }
 
 pub(crate) fn get_vendor_id_and_brand() -> (String, String) {
-    // On apple M1, `sysctl machdep.cpu.vendor` returns "", so fallback to "Apple" if the result
-    // is empty.
+    // On apple M1, `sysctl machdep.cpu.vendor` returns "", so fallback to "Apple"
+    // if the result is empty.
     let mut vendor = get_sysctl_str(b"machdep.cpu.vendor\0");
     if vendor.is_empty() {
         vendor = "Apple".to_string();

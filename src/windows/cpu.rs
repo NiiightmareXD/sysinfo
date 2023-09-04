@@ -1,34 +1,32 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::tools::KeyHandler;
-use crate::{CpuExt, CpuRefreshKind, LoadAvg};
+use crate::{sys::tools::KeyHandler, CpuExt, CpuRefreshKind, LoadAvg};
 
-use std::collections::HashMap;
-use std::io::Error;
-use std::mem;
-use std::ops::DerefMut;
-use std::ptr::null_mut;
-use std::sync::Mutex;
+use std::{collections::HashMap, io::Error, mem, ops::DerefMut, ptr::null_mut, sync::Mutex};
 
-use ntapi::ntpoapi::PROCESSOR_POWER_INFORMATION;
-
-use winapi::shared::minwindef::FALSE;
-use winapi::shared::winerror::{ERROR_INSUFFICIENT_BUFFER, ERROR_SUCCESS};
-use winapi::um::handleapi::CloseHandle;
-use winapi::um::pdh::{
-    PdhAddEnglishCounterA, PdhAddEnglishCounterW, PdhCloseQuery, PdhCollectQueryData,
-    PdhCollectQueryDataEx, PdhGetFormattedCounterValue, PdhOpenQueryA, PdhRemoveCounter,
-    PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_HCOUNTER, PDH_HQUERY,
+use winapi::{
+    shared::{
+        minwindef::FALSE,
+        winerror::{ERROR_INSUFFICIENT_BUFFER, ERROR_SUCCESS},
+    },
+    um::{
+        handleapi::CloseHandle,
+        pdh::{
+            PdhAddEnglishCounterA, PdhAddEnglishCounterW, PdhCloseQuery, PdhCollectQueryData,
+            PdhCollectQueryDataEx, PdhGetFormattedCounterValue, PdhOpenQueryA, PdhRemoveCounter,
+            PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_HCOUNTER, PDH_HQUERY,
+        },
+        powerbase::CallNtPowerInformation,
+        synchapi::CreateEventA,
+        sysinfoapi::{GetLogicalProcessorInformationEx, SYSTEM_INFO},
+        winbase::{RegisterWaitForSingleObject, INFINITE},
+        winnt::{
+            ProcessorInformation, RelationAll, RelationProcessorCore, BOOLEAN, HANDLE,
+            PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, PVOID, WT_EXECUTEDEFAULT,
+        },
+    },
 };
-use winapi::um::powerbase::CallNtPowerInformation;
-use winapi::um::synchapi::CreateEventA;
-use winapi::um::sysinfoapi::GetLogicalProcessorInformationEx;
-use winapi::um::sysinfoapi::SYSTEM_INFO;
-use winapi::um::winbase::{RegisterWaitForSingleObject, INFINITE};
-use winapi::um::winnt::{
-    ProcessorInformation, RelationAll, RelationProcessorCore, BOOLEAN, HANDLE,
-    PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, PVOID, WT_EXECUTEDEFAULT,
-};
+use windows::Win32::System::Power::PROCESSOR_POWER_INFORMATION;
 
 // This formula comes from Linux's include/linux/sched/loadavg.h
 // https://github.com/torvalds/linux/blob/345671ea0f9258f410eb057b9ced9cefbbe5dc78/include/linux/sched/loadavg.h#L20-L23
@@ -62,7 +60,7 @@ unsafe extern "system" fn load_avg_callback(counter: PVOID, _: BOOLEAN) {
         PDH_FMT_DOUBLE,
         null_mut(),
         display_value.as_mut_ptr(),
-    ) != ERROR_SUCCESS as _
+    ) != ERROR_SUCCESS as i32
     {
         return;
     }
@@ -83,7 +81,7 @@ unsafe fn init_load_avg() -> Mutex<Option<LoadAvg>> {
     // You can see the original implementation here: https://github.com/giampaolo/psutil
     let mut query = null_mut();
 
-    if PdhOpenQueryA(null_mut(), 0, &mut query) != ERROR_SUCCESS as _ {
+    if PdhOpenQueryA(null_mut(), 0, &mut query) != ERROR_SUCCESS as i32 {
         sysinfo_debug!("init_load_avg: PdhOpenQueryA failed");
         return Mutex::new(None);
     }
@@ -94,7 +92,7 @@ unsafe fn init_load_avg() -> Mutex<Option<LoadAvg>> {
         b"\\System\\Cpu Queue Length\0".as_ptr() as _,
         0,
         &mut counter,
-    ) != ERROR_SUCCESS as _
+    ) != ERROR_SUCCESS as i32
     {
         PdhCloseQuery(query);
         sysinfo_debug!("init_load_avg: failed to get CPU queue length");
@@ -108,7 +106,7 @@ unsafe fn init_load_avg() -> Mutex<Option<LoadAvg>> {
         return Mutex::new(None);
     }
 
-    if PdhCollectQueryDataEx(query, SAMPLING_INTERVAL as _, event) != ERROR_SUCCESS as _ {
+    if PdhCollectQueryDataEx(query, SAMPLING_INTERVAL as _, event) != ERROR_SUCCESS as i32 {
         PdhCloseQuery(query);
         sysinfo_debug!("init_load_avg: PdhCollectQueryDataEx failed");
         return Mutex::new(None);
@@ -196,7 +194,7 @@ impl Query {
                     display_value.as_mut_ptr(),
                 ) as u32;
                 let display_value = display_value.assume_init();
-                return if ret == ERROR_SUCCESS as _ {
+                return if ret == ERROR_SUCCESS {
                     let data = *display_value.u.doubleValue();
                     Some(data as f32)
                 } else {
@@ -217,7 +215,7 @@ impl Query {
         unsafe {
             let mut counter: PDH_HCOUNTER = std::mem::zeroed();
             let ret = PdhAddEnglishCounterW(self.internal.query, getter.as_ptr(), 0, &mut counter);
-            if ret == ERROR_SUCCESS as _ {
+            if ret == ERROR_SUCCESS as i32 {
                 self.internal.data.insert(name.clone(), counter);
             } else {
                 sysinfo_debug!(
@@ -233,7 +231,7 @@ impl Query {
 
     pub fn refresh(&self) {
         unsafe {
-            if PdhCollectQueryData(self.internal.query) != ERROR_SUCCESS as _ {
+            if PdhCollectQueryData(self.internal.query) != ERROR_SUCCESS as i32 {
                 sysinfo_debug!("failed to refresh CPU data");
             }
         }
@@ -467,9 +465,10 @@ pub(crate) fn get_key_used(p: &mut Cpu) -> &mut Option<KeyHandler> {
 
 // From https://stackoverflow.com/a/43813138:
 //
-// If your PC has 64 or fewer logical cpus installed, the above code will work fine. However,
-// if your PC has more than 64 logical cpus installed, use GetActiveCpuCount() or
-// GetLogicalCpuInformation() to determine the total number of logical cpus installed.
+// If your PC has 64 or fewer logical cpus installed, the above code will work
+// fine. However, if your PC has more than 64 logical cpus installed, use
+// GetActiveCpuCount() or GetLogicalCpuInformation() to determine the total
+// number of logical cpus installed.
 pub(crate) fn get_frequencies(nb_cpus: usize) -> Vec<u64> {
     let size = nb_cpus * mem::size_of::<PROCESSOR_POWER_INFORMATION>();
     let mut infos: Vec<PROCESSOR_POWER_INFORMATION> = Vec::with_capacity(nb_cpus);
@@ -497,8 +496,8 @@ pub(crate) fn get_frequencies(nb_cpus: usize) -> Vec<u64> {
 
 pub(crate) fn get_physical_core_count() -> Option<usize> {
     // we cannot use the number of cpus here to pre calculate the buf size
-    // GetLogicalCpuInformationEx with RelationProcessorCore passed to it not only returns
-    // the logical cores but also numa nodes
+    // GetLogicalCpuInformationEx with RelationProcessorCore passed to it not only
+    // returns the logical cores but also numa nodes
     //
     // GetLogicalCpuInformationEx: https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getlogicalprocessorinformationex
 

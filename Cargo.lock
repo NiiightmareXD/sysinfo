@@ -151,15 +151,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ntapi"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8a3895c6391c39d7fe7ebc444a87eb2991b2a0bc718fdabd071eec617fc68e4"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "num_cpus"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -298,7 +289,6 @@ dependencies = [
  "cfg-if",
  "core-foundation-sys",
  "libc",
- "ntapi",
  "once_cell",
  "rayon",
  "serde",
@@ -306,6 +296,7 @@ dependencies = [
  "tempfile",
  "winapi",
  "windows",
+ "windows-native",
 ]
 
 [[package]]
@@ -366,6 +357,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1f8cf84f35d2db49a46868f947758c7a1138116f7fac3bc844f43ade1292e64"
 dependencies = [
  "windows-targets",
+]
+
+[[package]]
+name = "windows-native"
+version = "1.0.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "239ad23b2cb80fddb2075952b37fac98a33adacc0d38fe9a39f4ba1a1937adf4"
+dependencies = [
+ "windows",
 ]
 
 [[package]]

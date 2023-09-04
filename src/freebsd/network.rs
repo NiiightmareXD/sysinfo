@@ -1,12 +1,12 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use std::collections::hash_map;
-use std::mem::MaybeUninit;
+use std::{collections::hash_map, mem::MaybeUninit};
 
 use super::utils;
-use crate::common::MacAddr;
-use crate::network::refresh_networks_addresses;
-use crate::{NetworkExt, Networks, NetworksExt, NetworksIter};
+use crate::{
+    common::MacAddr, network::refresh_networks_addresses, NetworkExt, Networks, NetworksExt,
+    NetworksIter,
+};
 
 macro_rules! old_and_new {
     ($ty_:expr, $name:ident, $old:ident, $data:expr) => {{

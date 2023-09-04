@@ -7,9 +7,7 @@ pub(crate) unsafe fn get_cpu_frequency() -> u64 {
 
 #[cfg(not(feature = "apple-sandbox"))]
 pub(crate) unsafe fn get_cpu_frequency() -> u64 {
-    use crate::sys::ffi;
-    use crate::sys::macos::utils::IOReleaser;
-    use crate::sys::utils::CFReleaser;
+    use crate::sys::{ffi, macos::utils::IOReleaser, utils::CFReleaser};
 
     let matching = ffi::IOServiceMatching(b"AppleARMIODevice\0".as_ptr() as *const _);
     if matching.is_null() {

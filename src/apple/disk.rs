@@ -1,23 +1,29 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::{
-    ffi,
-    utils::{self, CFReleaser},
+use crate::{
+    sys::{
+        ffi,
+        utils::{self, CFReleaser},
+    },
+    DiskExt, DiskKind, Disks, DisksExt,
 };
-use crate::{DiskExt, DiskKind, Disks, DisksExt};
 
-use core_foundation_sys::array::CFArrayCreate;
-use core_foundation_sys::base::kCFAllocatorDefault;
-use core_foundation_sys::dictionary::{CFDictionaryGetValueIfPresent, CFDictionaryRef};
-use core_foundation_sys::number::{kCFBooleanTrue, CFBooleanRef, CFNumberGetValue};
-use core_foundation_sys::string::{self as cfs, CFStringRef};
+use core_foundation_sys::{
+    array::CFArrayCreate,
+    base::kCFAllocatorDefault,
+    dictionary::{CFDictionaryGetValueIfPresent, CFDictionaryRef},
+    number::{kCFBooleanTrue, CFBooleanRef, CFNumberGetValue},
+    string::{self as cfs, CFStringRef},
+};
 
 use libc::c_void;
 
-use std::ffi::{CStr, OsStr, OsString};
-use std::os::unix::ffi::OsStrExt;
-use std::path::{Path, PathBuf};
-use std::ptr;
+use std::{
+    ffi::{CStr, OsStr, OsString},
+    os::unix::ffi::OsStrExt,
+    path::{Path, PathBuf},
+    ptr,
+};
 
 #[doc = include_str!("../../md_doc/disk.md")]
 pub struct Disk {
@@ -158,22 +164,23 @@ unsafe fn get_disks(container: &mut Vec<Disk>) {
             None => continue,
         };
 
-        // Future note: There is a difference between `kCFURLVolumeIsBrowsableKey` and the
-        // `kCFURLEnumeratorSkipInvisibles` option of `CFURLEnumeratorOptions`. Specifically,
-        // the first one considers the writable `Data`(`/System/Volumes/Data`) partition to be
-        // browsable, while it is classified as "invisible" by CoreFoundation's volume emumerator.
+        // Future note: There is a difference between `kCFURLVolumeIsBrowsableKey` and
+        // the `kCFURLEnumeratorSkipInvisibles` option of
+        // `CFURLEnumeratorOptions`. Specifically, the first one considers the
+        // writable `Data`(`/System/Volumes/Data`) partition to be browsable,
+        // while it is classified as "invisible" by CoreFoundation's volume emumerator.
         let browsable = get_bool_value(
             prop_dict.inner(),
             DictKey::Extern(ffi::kCFURLVolumeIsBrowsableKey),
         )
         .unwrap_or_default();
 
-        // Do not return invisible "disks". Most of the time, these are APFS snapshots, hidden
-        // system volumes, etc. Browsable is defined to be visible in the system's UI like Finder,
-        // disk utility, system information, etc.
+        // Do not return invisible "disks". Most of the time, these are APFS snapshots,
+        // hidden system volumes, etc. Browsable is defined to be visible in the
+        // system's UI like Finder, disk utility, system information, etc.
         //
-        // To avoid seemingly duplicating many disks and creating an inaccurate view of the system's resources,
-        // these are skipped entirely.
+        // To avoid seemingly duplicating many disks and creating an inaccurate view of
+        // the system's resources, these are skipped entirely.
         if !browsable {
             continue;
         }
@@ -186,7 +193,8 @@ unsafe fn get_disks(container: &mut Vec<Disk>) {
 
         // Skip any drive that is not locally attached to the system.
         //
-        // This includes items like SMB mounts, and matches the other platform's behavior.
+        // This includes items like SMB mounts, and matches the other platform's
+        // behavior.
         if !local_only {
             continue;
         }
@@ -228,10 +236,11 @@ fn get_disk_properties(
 }
 
 fn get_available_volume_space(disk_props: &RetainedCFDictionary) -> u64 {
-    // We prefer `AvailableCapacityForImportantUsage` over `AvailableCapacity` because
-    // it takes more of the system's properties into account, like the trash, system-managed caches,
-    // etc. It generally also returns higher values too, because of the above, so it's a more accurate
-    // representation of what the system _could_ still use.
+    // We prefer `AvailableCapacityForImportantUsage` over `AvailableCapacity`
+    // because it takes more of the system's properties into account, like the
+    // trash, system-managed caches, etc. It generally also returns higher
+    // values too, because of the above, so it's a more accurate representation
+    // of what the system _could_ still use.
     unsafe {
         get_int_value(
             disk_props.inner(),
@@ -340,10 +349,11 @@ unsafe fn new_disk(
     c_disk: libc::statfs,
     disk_props: &RetainedCFDictionary,
 ) -> Option<Disk> {
-    // IOKit is not available on any but the most recent (16+) iOS and iPadOS versions.
-    // Due to this, we can't query the medium type. All iOS devices use flash-based storage
-    // so we just assume the disk type is an SSD until Rust has a way to conditionally link to
-    // IOKit in more recent deployment versions.
+    // IOKit is not available on any but the most recent (16+) iOS and iPadOS
+    // versions. Due to this, we can't query the medium type. All iOS devices
+    // use flash-based storage so we just assume the disk type is an SSD until
+    // Rust has a way to conditionally link to IOKit in more recent deployment
+    // versions.
     #[cfg(target_os = "macos")]
     let type_ = crate::sys::inner::disk::get_disk_type(&c_disk).unwrap_or(DiskKind::Unknown(-1));
     #[cfg(not(target_os = "macos"))]

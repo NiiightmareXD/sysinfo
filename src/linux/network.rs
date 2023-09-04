@@ -1,12 +1,12 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use std::io::Read;
-use std::path::Path;
-use std::{fs::File, u8};
+use std::{fs::File, io::Read, path::Path, u8};
 
-use crate::common::{MacAddr, Networks};
-use crate::network::refresh_networks_addresses;
-use crate::{NetworkExt, NetworksExt, NetworksIter};
+use crate::{
+    common::{MacAddr, Networks},
+    network::refresh_networks_addresses,
+    NetworkExt, NetworksExt, NetworksIter,
+};
 use std::collections::{hash_map, HashMap};
 
 macro_rules! old_and_new {
@@ -265,8 +265,7 @@ impl NetworkExt for NetworkData {
 #[cfg(test)]
 mod test {
     use super::refresh_networks_list_from_sysfs;
-    use std::collections::HashMap;
-    use std::fs;
+    use std::{collections::HashMap, fs};
 
     #[test]
     fn refresh_networks_list_add_interface() {

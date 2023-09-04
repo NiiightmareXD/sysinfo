@@ -5,8 +5,8 @@ use libc::{c_char, c_void, sysctl, sysctlbyname};
 use std::ptr::NonNull;
 
 // A helper using to auto release the resource got from CoreFoundation.
-// More information about the ownership policy for CoreFoundation pelease refer the link below:
-// https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-CJBEJBHH
+// More information about the ownership policy for CoreFoundation pelease refer
+// the link below: https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-CJBEJBHH
 #[repr(transparent)]
 pub(crate) struct CFReleaser<T>(NonNull<T>);
 

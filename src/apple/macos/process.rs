@@ -1,9 +1,11 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use std::ffi::CStr;
-use std::mem::{self, MaybeUninit};
-use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::{
+    ffi::CStr,
+    mem::{self, MaybeUninit},
+    ops::Deref,
+    path::{Path, PathBuf},
+};
 
 use std::borrow::Borrow;
 
@@ -11,8 +13,7 @@ use libc::{c_int, c_void, kill, size_t};
 
 use crate::{DiskUsage, Gid, Pid, ProcessExt, ProcessRefreshKind, ProcessStatus, Signal, Uid};
 
-use crate::sys::process::ThreadStatus;
-use crate::sys::system::Wrap;
+use crate::sys::{process::ThreadStatus, system::Wrap};
 
 #[doc = include_str!("../../../md_doc/process.md")]
 pub struct Process {
@@ -37,8 +38,8 @@ pub struct Process {
     group_id: Option<Gid>,
     effective_group_id: Option<Gid>,
     pub(crate) process_status: ProcessStatus,
-    /// Status of process (running, stopped, waiting, etc). `None` means `sysinfo` doesn't have
-    /// enough rights to get this information.
+    /// Status of process (running, stopped, waiting, etc). `None` means
+    /// `sysinfo` doesn't have enough rights to get this information.
     ///
     /// This is very likely this one that you want instead of `process_status`.
     pub(crate) status: Option<ThreadStatus>,
@@ -409,36 +410,34 @@ unsafe fn create_new_process(
     let mut proc_args = Vec::with_capacity(size as _);
     let ptr: *mut u8 = proc_args.as_mut_slice().as_mut_ptr();
     let mut mib = [libc::CTL_KERN, libc::KERN_PROCARGS2, pid.0 as _];
-    /*
-     * /---------------\ 0x00000000
-     * | ::::::::::::: |
-     * |---------------| <-- Beginning of data returned by sysctl() is here.
-     * | argc          |
-     * |---------------|
-     * | exec_path     |
-     * |---------------|
-     * | 0             |
-     * |---------------|
-     * | arg[0]        |
-     * |---------------|
-     * | 0             |
-     * |---------------|
-     * | arg[n]        |
-     * |---------------|
-     * | 0             |
-     * |---------------|
-     * | env[0]        |
-     * |---------------|
-     * | 0             |
-     * |---------------|
-     * | env[n]        |
-     * |---------------|
-     * | ::::::::::::: |
-     * |---------------| <-- Top of stack.
-     * :               :
-     * :               :
-     * \---------------/ 0xffffffff
-     */
+    // /---------------\ 0x00000000
+    // | ::::::::::::: |
+    // |---------------| <-- Beginning of data returned by sysctl() is here.
+    // | argc          |
+    // |---------------|
+    // | exec_path     |
+    // |---------------|
+    // | 0             |
+    // |---------------|
+    // | arg[0]        |
+    // |---------------|
+    // | 0             |
+    // |---------------|
+    // | arg[n]        |
+    // |---------------|
+    // | 0             |
+    // |---------------|
+    // | env[0]        |
+    // |---------------|
+    // | 0             |
+    // |---------------|
+    // | env[n]        |
+    // |---------------|
+    // | ::::::::::::: |
+    // |---------------| <-- Top of stack.
+    // :               :
+    // :               :
+    // \---------------/ 0xffffffff
     if libc::sysctl(
         mib.as_mut_ptr(),
         mib.len() as _,

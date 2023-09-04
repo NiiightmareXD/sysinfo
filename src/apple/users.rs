@@ -70,8 +70,8 @@ pub(crate) fn get_users_list() -> Vec<User> {
     })
 }
 
-// This was the OSX-based solution. It provides enough information, but what a mess!
-// pub fn get_users_list() -> Vec<User> {
+// This was the OSX-based solution. It provides enough information, but what a
+// mess! pub fn get_users_list() -> Vec<User> {
 //     let mut users = Vec::new();
 //     let node_name = b"/Local/Default\0";
 
@@ -109,9 +109,9 @@ pub(crate) fn get_users_list() -> Vec<User> {
 //         );
 //         let len = ffi::CFArrayGetCount(results);
 //         for i in 0..len {
-//             let name = match get_user_name(ffi::CFArrayGetValueAtIndex(results, i)) {
-//                 Some(n) => n,
-//                 None => continue,
+//             let name = match
+// get_user_name(ffi::CFArrayGetValueAtIndex(results, i)) {                 
+// Some(n) => n,                 None => continue,
 //             };
 //             users.push(User { name });
 //         }
@@ -129,8 +129,8 @@ pub(crate) fn get_users_list() -> Vec<User> {
 //     let user_name = ffi::ODRecordGetRecordName(result as _);
 //     let ptr = ffi::CFStringGetCharactersPtr(user_name);
 //     String::from_utf16(&if ptr.is_null() {
-//         let len = ffi::CFStringGetLength(user_name); // It returns the len in UTF-16 code pairs.
-//         if len == 0 {
+//         let len = ffi::CFStringGetLength(user_name); // It returns the len in
+// UTF-16 code pairs.         if len == 0 {
 //             continue;
 //         }
 //         let mut v = Vec::with_capacity(len as _);

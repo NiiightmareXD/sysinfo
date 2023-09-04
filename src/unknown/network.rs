@@ -1,7 +1,6 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::common::MacAddr;
-use crate::{NetworkExt, Networks, NetworksExt, NetworksIter};
+use crate::{common::MacAddr, NetworkExt, Networks, NetworksExt, NetworksIter};
 
 impl NetworksExt for Networks {
     fn iter(&self) -> NetworksIter {

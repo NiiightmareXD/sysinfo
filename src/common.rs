@@ -2,11 +2,13 @@
 
 use crate::{Disk, GroupExt, NetworkData, NetworksExt, User, UserExt};
 
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::convert::{From, TryFrom};
-use std::fmt;
-use std::str::FromStr;
+use std::{
+    cmp::Ordering,
+    collections::HashMap,
+    convert::{From, TryFrom},
+    fmt,
+    str::FromStr,
+};
 
 /// Trait to have a common conversions for the [`Pid`][crate::Pid] type.
 ///
@@ -207,11 +209,12 @@ assert_eq!(r.", stringify!($name), "().is_some(), false);
     };
 }
 
-/// Used to determine what you want to refresh specifically on the [`Process`] type.
+/// Used to determine what you want to refresh specifically on the [`Process`]
+/// type.
 ///
-/// ⚠️ Just like all other refresh types, ruling out a refresh doesn't assure you that
-/// the information won't be retrieved if the information is accessible without needing
-/// extra computation.
+/// ⚠️ Just like all other refresh types, ruling out a refresh doesn't assure you
+/// that the information won't be retrieved if the information is accessible
+/// without needing extra computation.
 ///
 /// ```
 /// use sysinfo::{ProcessExt, ProcessRefreshKind, System, SystemExt};
@@ -287,9 +290,9 @@ on Windows as other platforms get this information alongside the Process informa
 
 /// Used to determine what you want to refresh specifically on the [`Cpu`] type.
 ///
-/// ⚠️ Just like all other refresh types, ruling out a refresh doesn't assure you that
-/// the information won't be retrieved if the information is accessible without needing
-/// extra computation.
+/// ⚠️ Just like all other refresh types, ruling out a refresh doesn't assure you
+/// that the information won't be retrieved if the information is accessible
+/// without needing extra computation.
 ///
 /// ```
 /// use sysinfo::{CpuExt, CpuRefreshKind, System, SystemExt};
@@ -345,11 +348,12 @@ impl CpuRefreshKind {
     impl_get_set!(CpuRefreshKind, frequency, with_frequency, without_frequency);
 }
 
-/// Used to determine what you want to refresh specifically on the [`System`] type.
+/// Used to determine what you want to refresh specifically on the [`System`]
+/// type.
 ///
-/// ⚠️ Just like all other refresh types, ruling out a refresh doesn't assure you that
-/// the information won't be retrieved if the information is accessible without needing
-/// extra computation.
+/// ⚠️ Just like all other refresh types, ruling out a refresh doesn't assure you
+/// that the information won't be retrieved if the information is accessible
+/// without needing extra computation.
 ///
 /// ```
 /// use sysinfo::{RefreshKind, System, SystemExt};
@@ -401,7 +405,8 @@ impl RefreshKind {
         Self::default()
     }
 
-    /// Creates a new `RefreshKind` with every refresh set to `true`/`Some(...)`.
+    /// Creates a new `RefreshKind` with every refresh set to
+    /// `true`/`Some(...)`.
     ///
     /// ```
     /// use sysinfo::RefreshKind;
@@ -581,8 +586,8 @@ pub enum DiskKind {
 
 /// An enum representing signals on UNIX-like systems.
 ///
-/// On non-unix systems, this enum is mostly useless and is only there to keep coherency between
-/// the different OSes.
+/// On non-unix systems, this enum is mostly useless and is only there to keep
+/// coherency between the different OSes.
 ///
 /// If you want the list of the supported signals on the current system, use
 /// [`SystemExt::SUPPORTED_SIGNALS`][crate::SystemExt::SUPPORTED_SIGNALS].
@@ -698,7 +703,8 @@ impl std::fmt::Display for Signal {
 
 /// A struct representing system load average value.
 ///
-/// It is returned by [`SystemExt::load_average`][crate::SystemExt::load_average].
+/// It is returned by
+/// [`SystemExt::load_average`][crate::SystemExt::load_average].
 ///
 /// ```no_run
 /// use sysinfo::{System, SystemExt};
@@ -955,7 +961,8 @@ pub enum ProcessStatus {
     Zombie,
     /// ## Linux
     ///
-    /// Tracing stop (Linux 2.6.33 onward). Stopped by debugger during the tracing.
+    /// Tracing stop (Linux 2.6.33 onward). Stopped by debugger during the
+    /// tracing.
     ///
     /// ## Other OS
     ///
@@ -1071,7 +1078,8 @@ pub fn get_current_pid() -> Result<Pid, &'static str> {
 
 /// MAC address for network interface.
 ///
-/// It is returned by [`NetworkExt::mac_address`][crate::NetworkExt::mac_address].
+/// It is returned by
+/// [`NetworkExt::mac_address`][crate::NetworkExt::mac_address].
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct MacAddr(pub [u8; 6]);
 
@@ -1100,14 +1108,15 @@ impl fmt::Display for MacAddr {
 mod tests {
     use super::{MacAddr, ProcessStatus};
 
-    // This test only exists to ensure that the `Display` and `Debug` traits are implemented on the
-    // `ProcessStatus` enum on all targets.
+    // This test only exists to ensure that the `Display` and `Debug` traits are
+    // implemented on the `ProcessStatus` enum on all targets.
     #[test]
     fn check_display_impl_process_status() {
         println!("{} {:?}", ProcessStatus::Parked, ProcessStatus::Idle);
     }
 
-    // Ensure that the `Display` and `Debug` traits are implemented on the `MacAddr` struct
+    // Ensure that the `Display` and `Debug` traits are implemented on the `MacAddr`
+    // struct
     #[test]
     fn check_display_impl_mac_address() {
         println!(
@@ -1128,12 +1137,11 @@ mod tests {
         assert!(!MacAddr([1, 2, 3, 4, 5, 6]).is_unspecified());
     }
 
-    // This test exists to ensure that the `TryFrom<usize>` and `FromStr` traits are implemented
-    // on `Uid`, `Gid` and `Pid`.
+    // This test exists to ensure that the `TryFrom<usize>` and `FromStr` traits are
+    // implemented on `Uid`, `Gid` and `Pid`.
     #[test]
     fn check_uid_gid_from_impls() {
-        use std::convert::TryFrom;
-        use std::str::FromStr;
+        use std::{convert::TryFrom, str::FromStr};
 
         #[cfg(not(windows))]
         {

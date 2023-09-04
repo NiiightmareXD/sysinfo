@@ -1,24 +1,30 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
-use crate::sys::component::{self, Component};
-use crate::sys::cpu::*;
-use crate::sys::process::*;
-use crate::sys::utils::{get_all_data, to_u64};
 use crate::{
-    CpuRefreshKind, Disks, LoadAvg, Networks, Pid, ProcessRefreshKind, RefreshKind, SystemExt, User,
+    sys::{
+        component::{self, Component},
+        cpu::*,
+        process::*,
+        utils::{get_all_data, to_u64},
+    },
+    CpuRefreshKind, Disks, LoadAvg, Networks, Pid, ProcessRefreshKind, RefreshKind, SystemExt,
+    User,
 };
 
 use libc::{self, c_char, c_int, sysconf, _SC_CLK_TCK, _SC_HOST_NAME_MAX, _SC_PAGESIZE};
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufRead, BufReader, Read},
+    path::Path,
+    str::FromStr,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
-// This whole thing is to prevent having too many files open at once. It could be problematic
-// for processes using a lot of files and using sysinfo at the same time.
+// This whole thing is to prevent having too many files open at once. It could
+// be problematic for processes using a lot of files and using sysinfo at the
+// same time.
 #[allow(clippy::mutex_atomic)]
 pub(crate) static mut REMAINING_FILES: once_cell::sync::Lazy<Arc<Mutex<isize>>> =
     once_cell::sync::Lazy::new(|| {
@@ -36,8 +42,8 @@ pub(crate) static mut REMAINING_FILES: once_cell::sync::Lazy<Arc<Mutex<isize>>> 
 
             // The set the soft limit to the hard one.
             limits.rlim_cur = limits.rlim_max;
-            // In this part, we leave minimum 50% of the available file descriptors to the process
-            // using sysinfo.
+            // In this part, we leave minimum 50% of the available file descriptors to the
+            // process using sysinfo.
             Arc::new(Mutex::new(
                 if libc::setrlimit(libc::RLIMIT_NOFILE, &limits) == 0 {
                     limits.rlim_cur / 2
@@ -80,7 +86,8 @@ fn boot_time() -> u64 {
                 .unwrap_or(0);
         }
     }
-    // Either we didn't find "btime" or "/proc/stat" wasn't available for some reason...
+    // Either we didn't find "btime" or "/proc/stat" wasn't available for some
+    // reason...
     unsafe {
         let mut up: libc::timespec = std::mem::zeroed();
         if libc::clock_gettime(libc::CLOCK_BOOTTIME, &mut up) == 0 {
@@ -170,8 +177,8 @@ impl System {
     /// It is sometime possible that a CPU usage computation is bigger than
     /// `"number of CPUs" * 100`.
     ///
-    /// To prevent that, we compute ahead of time this maximum value and ensure that processes'
-    /// CPU usage don't go over it.
+    /// To prevent that, we compute ahead of time this maximum value and ensure
+    /// that processes' CPU usage don't go over it.
     fn get_max_process_cpu_usage(&self) -> f32 {
         self.cpus.len() as f32 * 100.
     }
@@ -586,9 +593,10 @@ impl SystemExt for System {
 
     #[cfg(target_os = "android")]
     fn distribution_id(&self) -> String {
-        // Currently get_system_info_android doesn't support InfoType::DistributionID and always
-        // returns None. This call is done anyway for consistency with non-Android implementation
-        // and to suppress dead-code warning for DistributionID on Android.
+        // Currently get_system_info_android doesn't support InfoType::DistributionID
+        // and always returns None. This call is done anyway for consistency
+        // with non-Android implementation and to suppress dead-code warning for
+        // DistributionID on Android.
         get_system_info_android(InfoType::DistributionID)
             .unwrap_or_else(|| std::env::consts::OS.to_owned())
     }
@@ -655,8 +663,8 @@ fn get_system_info_linux(info: InfoType, path: &Path, fallback_path: &Path) -> O
         }
     }
 
-    // Fallback to `/etc/lsb-release` file for systems where VERSION_ID is not included.
-    // VERSION_ID is not required in the `/etc/os-release` file
+    // Fallback to `/etc/lsb-release` file for systems where VERSION_ID is not
+    // included. VERSION_ID is not required in the `/etc/os-release` file
     // per https://www.linux.org/docs/man5/os-release.html
     // If this fails for some reason, fallback to None
     let reader = BufReader::new(File::open(fallback_path).ok()?);
